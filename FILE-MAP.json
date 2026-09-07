@@ -1,0 +1,199 @@
+[
+  {
+    "file": "js/core/state.js",
+    "sources": [
+      "js/state.js"
+    ]
+  },
+  {
+    "file": "js/core/helpers.js",
+    "sources": [
+      "js/i18n.js",
+      "js/formatting.js",
+      "js/dates.js"
+    ]
+  },
+  {
+    "file": "js/core/supabase.js",
+    "sources": [
+      "js/supabase.js"
+    ]
+  },
+  {
+    "file": "js/services/data.js",
+    "sources": [
+      "js/services/settings.js",
+      "js/services/users.js",
+      "js/services/collection-years.js",
+      "js/services/loans.js",
+      "js/services/capital.js",
+      "js/services/repayment-requests.js",
+      "js/services/settlement-transfers.js",
+      "js/services/annual-settlement.js"
+    ]
+  },
+  {
+    "file": "js/core/session.js",
+    "sources": [
+      "js/session.js"
+    ]
+  },
+  {
+    "file": "js/views/shell.js",
+    "sources": [
+      "js/views/login.js",
+      "js/views/shell.js"
+    ]
+  },
+  {
+    "file": "js/views/settlements.js",
+    "sources": [
+      "js/views/collection-years.js",
+      "js/views/annual-settlement.js"
+    ]
+  },
+  {
+    "file": "js/views/loans.js",
+    "sources": [
+      "js/views/payments.js",
+      "js/views/loans.js",
+      "js/views/record-payment.js",
+      "js/views/payment-action.js",
+      "js/views/loan-details.js",
+      "js/views/loan-approval.js",
+      "js/views/repayment-request.js",
+      "js/views/repayment-admin-review.js",
+      "js/views/early-reviews.js",
+      "js/views/new-loan.js"
+    ]
+  },
+  {
+    "file": "js/views/capital.js",
+    "sources": [
+      "js/views/capital-movements.js",
+      "js/views/capital-transfer.js"
+    ]
+  },
+  {
+    "file": "js/views/management.js",
+    "sources": [
+      "js/views/admin.js",
+      "js/views/accounts.js"
+    ]
+  },
+  {
+    "file": "js/views/dashboard.js",
+    "sources": [
+      "js/views/analytics.js",
+      "js/views/dashboard.js"
+    ]
+  },
+  {
+    "file": "js/views/components.js",
+    "sources": [
+      "js/views/metric-card.js",
+      "js/views/analytics-charts.js",
+      "js/views/financial-summary.js"
+    ]
+  },
+  {
+    "file": "js/events/bindings.js",
+    "sources": [
+      "js/events/language.js",
+      "js/events/analytics.js",
+      "js/events/early-reviews.js",
+      "js/events/loan-actions.js",
+      "js/events/payment-filters.js",
+      "js/events/navigation.js",
+      "js/events/loan-filters.js",
+      "js/events/accounts.js",
+      "js/events/loan-form.js",
+      "js/events/loan-details.js",
+      "js/events/loan-approval.js",
+      "js/events/repayment-request.js",
+      "js/events/repayment-admin-review.js",
+      "js/events/payment-action.js",
+      "js/events/record-payment.js",
+      "js/events/collection-years.js",
+      "js/events/capital-transfer.js",
+      "js/events/capital-movements.js",
+      "js/events/annual-settlement.js",
+      "js/events/admin.js"
+    ]
+  },
+  {
+    "file": "js/core/ui-runtime.js",
+    "sources": [
+      "js/events/calendar.js",
+      "js/events/arabic-digits.js",
+      "js/events/sar-styling.js",
+      "js/events/login.js",
+      "js/events/render.js",
+      "js/events/page-router.js"
+    ]
+  },
+  {
+    "file": "js/domain/records.js",
+    "sources": [
+      "js/events/loan-scope.js",
+      "js/events/payment-log.js",
+      "js/events/collection-window.js"
+    ]
+  },
+  {
+    "file": "js/services/admin.js",
+    "sources": [
+      "js/events/admin-services.js"
+    ]
+  },
+  {
+    "file": "js/domain/calculations.js",
+    "sources": [
+      "js/domain/loan-calculation.js",
+      "js/domain/permissions.js",
+      "js/domain/repayment-calculation.js",
+      "js/domain/analytics-metrics.js",
+      "js/domain/capital-metrics.js",
+      "js/domain/account-metrics.js",
+      "js/domain/payment-permissions.js",
+      "js/domain/collection-expectations.js",
+      "js/domain/loan-filter-options.js"
+    ]
+  },
+  {
+    "file": "js/events/financial-forms.js",
+    "sources": [
+      "js/domain/capital-parties.js",
+      "js/domain/financial-toggle.js",
+      "js/domain/calculation-previews.js"
+    ]
+  },
+  {
+    "file": "js/actions/repayments.js",
+    "sources": [
+      "js/domain/repayment-actions.js"
+    ]
+  },
+  {
+    "file": "js/actions/payments.js",
+    "sources": [
+      "js/domain/payment-actions.js",
+      "js/domain/payment-dialog.js"
+    ]
+  },
+  {
+    "file": "js/actions/capital.js",
+    "sources": [
+      "js/domain/capital-permissions.js",
+      "js/domain/capital-actions.js",
+      "js/domain/capital-name.js"
+    ]
+  },
+  {
+    "file": "js/actions/loans.js",
+    "sources": [
+      "js/domain/loan-form-helpers.js",
+      "js/domain/loan-saving.js"
+    ]
+  }
+]
