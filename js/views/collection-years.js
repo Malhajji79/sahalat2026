@@ -1,0 +1,43 @@
+function collectionYearsView(){
+  const years=state.collectionYears||[];
+  const today=new Date();
+  const expectedYears=new Set((state.expectedInterestByCollectionYear||[]).filter(r=>Number(r.installmentCount||0)>0).map(r=>Number(r.collectionYear)));
+  const isPastYear=y=>!!y?.endDate && new Date(y.endDate+'T23:59:59')<today;
+  const isCurrentYear=y=>!!y?.startDate && !!y?.endDate && today>=new Date(y.startDate+'T00:00:00') && today<=new Date(y.endDate+'T23:59:59');
+  const visibleYears=years.filter(y=>isPastYear(y) || isCurrentYear(y) || expectedYears.has(Number(y.year)));
+  let selected=Number(state.selectedCollectionYear||0);
+  if(!visibleYears.some(y=>Number(y.year)===selected)){
+    const currentVisible=visibleYears.find(isCurrentYear);
+    selected=Number(currentVisible?.year || visibleYears.at(-1)?.year || visibleYears[0]?.year || 0);
+    state.selectedCollectionYear=selected || null;
+  }
+  const reportRows=(state.expectedInterestByCollectionYear||[]).filter(r=>r.collectionYear===selected);
+  const byUser=new Map(reportRows.map(r=>[String(r.userId),r]));
+  const users=state.users.filter(u=>u.dbRole!=='admin');
+  const totalUser=users.reduce((s,u)=>s+Number(byUser.get(String(u.id))?.userShare||0),0);
+  const totalOwner=users.reduce((s,u)=>s+Number(byUser.get(String(u.id))?.ownerShare||0),0);
+  const totalInterest=totalUser+totalOwner;
+  const totalInstallments=users.reduce((s,u)=>s+Number(byUser.get(String(u.id))?.installmentCount||0),0);
+  return `
+  <div class="collection-years-page" dir="${state.lang==='en'?'ltr':'rtl'}">
+  <div class="notice" style="background:#ecfdf5;color:#166534;margin-bottom:18px">${tx('السنة التحصيلية هي المرجع الرسمي للتحليلات السنوية في سهالات. تاريخ استحقاق القسط المعتمد هو يوم ٥ من نهاية فترة التحصيل، والقروض النشطة والمغلقة تدخل في حساب الفائدة المتوقعة.','The collection year is Sahalat’s official reference for annual analytics. The approved installment due date is the 5th at the end of the collection period, and active and closed loans are included in expected-interest calculations.')}</div>
+  <div class="panel" style="margin-bottom:18px">
+    <div class="toolbar" style="margin-top:0">
+      <div><h3 class="section-title" style="margin:0">${tx('جدول السنوات التحصيلية','Collection Years Schedule')}</h3><div class="small muted" style="margin-top:5px">${tx('السنوات التحصيلية المنتهية مثبتة. السنة الحالية والسنوات المستقبلية التي لديها أقساط متوقعة تظهر تلقائياً، مع بقاء تاريخ البداية والنهاية قابلين للتعديل. التواريخ مأخوذة كما هي من جدول السنوات التحصيلية المعتمد.','Completed collection years are locked. The current year and future years with expected installments appear automatically, while start and end dates remain editable. Dates are read directly from the approved collection-years table.')}</div></div>
+      <button class="btn btn-secondary" id="refreshCollectionYearsBtn">${tx('تحديث البيانات','Refresh Data')}</button>
+    </div>
+    <div class="table-wrap"><table style="min-width:780px"><thead><tr><th>${tx('التسلسل','Sequence')}</th><th>${tx('السنة التحصيلية','Collection Year')}</th><th>${tx('تبدأ من','Starts')}</th><th>${tx('تنتهي في','Ends')}</th><th>${tx('الإجراء','Action')}</th></tr></thead>
+      <tbody>${visibleYears.map(y=>{const locked=isPastYear(y);return `<tr><td>${arNum(y.sequenceNo)}</td><td><strong>${arNum(y.year)}</strong>${locked?` <span class="small" style="color:#64748b">— ${tx('مثبتة','Locked')}</span>`:''}</td><td>${locked?`<strong>${collectionDateDisplay(y.startDate)}</strong>`:`${customDateInput('',y.startDate||'',`data-id="${y.id}" style="min-width:160px"`).replace('id=""','').replace('class="date-native"','class="date-native collectionStartDate"')}`}</td><td>${locked?`<strong>${collectionDateDisplay(y.endDate)}</strong>`:`${customDateInput('',y.endDate||'',`data-id="${y.id}" style="min-width:160px"`).replace('id=""','').replace('class="date-native"','class="date-native collectionEndDate"')}`}</td><td>${locked?`<span class="small muted">${tx('مقفلة','Locked')}</span>`:`<button class="btn btn-primary saveCollectionYearBtn" data-id="${y.id}">${tx('حفظ','Save')}</button>`}</td></tr>`}).join('')}</tbody>
+    </table></div><div id="collectionYearStatus" class="small" style="margin-top:10px"></div>
+  </div>
+  <div class="panel">
+    <div class="toolbar" style="margin-top:0"><div><h3 class="section-title" style="margin:0">${tx('الفائدة المتوقعة بنهاية السنة التحصيلية','Expected Interest at Collection-Year End')}</h3><div class="small muted" style="margin-top:5px">${tx('توزيع حصة المستخدم وحصة المالك على تواريخ الاستحقاق الشهرية الفعلية حسب قاعدة يوم ٢٥/٢٦.','User and owner shares are distributed across actual monthly due dates according to the 25/26-day rule.')}</div></div><div class="field" style="margin:0;min-width:210px"><label>${tx('السنة التحصيلية','Collection Year')}</label><select id="expectedCollectionYearSelect">${visibleYears.map(y=>`<option value="${y.year}" ${y.year===selected?'selected':''}>${arNum(y.year)}</option>`).join('')}</select></div></div>
+    <div class="grid cards" style="margin:14px 0 18px">${metricCard(tx('حصة المستخدمين المتوقعة','Expected User Share'),wholeMoney(totalUser))}${metricCard(tx('حصة المالك المتوقعة','Expected Owner Share'),wholeMoney(totalOwner))}${metricCard(tx('إجمالي الفائدة المتوقعة','Total Expected Interest'),wholeMoney(totalInterest))}${metricCard(tx('عدد الاستحقاقات','Number of Installments'),arNum(totalInstallments))}</div>
+    <div class="table-wrap"><table style="min-width:940px"><thead><tr><th>${tx('المستخدم','User')}</th><th>${tx('حصة المستخدم المتوقعة','Expected User Share')}</th><th>${tx('حصة المالك المتوقعة','Expected Owner Share')}</th><th>${tx('إجمالي الفائدة','Total Interest')}</th><th>${tx('عدد الاستحقاقات','Number of Installments')}</th><th>${tx('عدد القروض','Loan Count')}</th></tr></thead><tbody>
+      ${users.map(u=>{const r=byUser.get(String(u.id));const hasExpected=!!r && Number(r.installmentCount||0)>0;return `<tr><td><strong>${u.username}</strong></td><td>${hasExpected?wholeMoney(r.userShare):''}</td><td>${hasExpected?wholeMoney(r.ownerShare):''}</td><td>${hasExpected?wholeMoney(Number(r.userShare||0)+Number(r.ownerShare||0)):''}</td><td>${hasExpected?arNum(r.installmentCount):''}</td><td>${hasExpected?arNum(r.loanCount):''}</td></tr>`}).join('')}
+      <tr style="font-weight:900;background:#f0fdf4"><td>${tx('الإجمالي','Total')}</td><td>${wholeMoney(totalUser)}</td><td>${wholeMoney(totalOwner)}</td><td>${wholeMoney(totalInterest)}</td><td>${arNum(totalInstallments)}</td><td>—</td></tr>
+    </tbody></table></div>
+  </div>
+  </div>`;
+}
+
