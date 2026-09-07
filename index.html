@@ -551,6 +551,8 @@ html body #app .card .kpi .sar-unit {
   <script src="js/services/capital.js"></script>
   <script src="js/services/repayment-requests.js"></script>
   <script src="js/services/settlement-transfers.js"></script>
+  <script src="js/services/annual-settlement.js"></script>
+  <script src="js/session.js"></script>
   <script>
 
 
@@ -655,84 +657,6 @@ function calcLoan(amount, months, generalDiscount, userDiscount, adminDiscount, 
     baseRate,baseInterest,afterGeneral,userGross,adminGross,userNet,adminNet,
     finalInterest,total,installmentExact,installment,scheduledWholePayments,settlementDue
   };
-}
-
-
-
-async function loadCurrentProfile(authUser){
-  const {data,error} = await supabaseClient
-    .from('users')
-    .select('id,auth_user_id,username,full_name,role,status,base_capital,transferred_user,transferred_owner,loan_number_start')
-    .eq('auth_user_id', authUser.id)
-    .maybeSingle();
-
-  if(error) throw error;
-  if(!data) throw new Error('حساب الدخول غير مربوط بمستخدم في جدول users.');
-  if(data.status!=='active') throw new Error('هذا الحساب غير نشط.');
-
-  state.currentUser = mapDbUser(data);
-  state.accountUser = state.currentUser.username;
-
-  await loadSystemSettings();
-  await loadVisibleUsers();
-
-  // Ensure the current profile is available even under the strictest RLS result.
-  if(!state.users.some(u=>u.id===state.currentUser.id)){
-    state.users.unshift(state.currentUser);
-  }
-
-  await loadSettlementTransferTotals();
-  await loadCollectionYears();
-  await loadExpectedInterestByCollectionYear();
-  await loadLoansFromDatabase();
-  await loadCapitalMovementsFromDatabase();
-  await loadCapitalHistoryFromDatabase();
-  await loadRepaymentRequestsFromDatabase();
-}
-
-async function bootstrapApp(){
-  const app=document.getElementById('app');
-  app.innerHTML=`<div class="login-wrap"><div class="login-card" style="grid-column:1/-1"><div class="panel login-panel"><h2>سهالات</h2><p class="muted">جاري الاتصال بقاعدة البيانات...</p></div></div></div>`;
-
-  try{
-    const {data:{session},error}=await supabaseClient.auth.getSession();
-    if(error) throw error;
-
-    state.authSession=session;
-    state.authUser=session?.user||null;
-
-    if(session?.user){
-      await loadCurrentProfile(session.user);
-    }else{
-      state.currentUser=null;
-      state.users=[];
-      const {data:loginUsers,error:loginUsersError}=await supabaseClient.rpc('get_login_users');
-      if(loginUsersError){
-        console.error('get_login_users error:',loginUsersError);
-        state.loginUsers=[];
-        state.connectionError='تعذر تحميل قائمة المستخدمين: '+(loginUsersError.message||'خطأ غير معروف');
-      }else{
-        state.loginUsers=(loginUsers||[])
-          .filter(x=>x?.username && x?.email)
-          .map(x=>({username:String(x.username),email:String(x.email)}));
-      }
-    }
-
-    state.connectionError='';
-  }catch(err){
-    console.error(err);
-    state.currentUser=null;
-    state.connectionError=err?.message||'تعذر الاتصال بقاعدة البيانات.';
-  }finally{
-    state.isBootstrapping=false;
-    render();
-  }
-}
-
-async function refreshAuthenticatedData(){
-  if(!state.authUser) return;
-  await loadCurrentProfile(state.authUser);
-  render();
 }
 
 
@@ -4624,56 +4548,6 @@ function bindCapitalMovements(){
 }
 
 
-
-async function loadAnnualSettlementData(){
-  if(state.currentUser.role!=='مدير مشروع') return;
-
-  const eligible=state.users.filter(u=>u.dbRole!=='admin');
-  if(!state.annualSettlementUserId || !eligible.some(u=>String(u.id)===String(state.annualSettlementUserId))){
-    state.annualSettlementUserId=eligible[0]?.id||null;
-  }
-  if(!state.annualSettlementUserId) return;
-
-  const {data:summary,error:summaryError}=await supabaseClient.rpc('get_general_settlement_summary',{
-    p_user_id:state.annualSettlementUserId
-  });
-  if(summaryError) throw summaryError;
-
-  const row=Array.isArray(summary)?summary[0]:summary;
-  state.annualSettlementSummary=row?{
-    realizedUser:Number(row.realized_user_interest||0),
-    settledUser:Number(row.settled_user_interest||0),
-    remainingUser:Number(row.remaining_user_interest||0),
-    realizedOwner:Number(row.realized_owner_interest||0),
-    settledOwner:Number(row.settled_owner_interest||0),
-    remainingOwner:Number(row.remaining_owner_interest||0)
-  }:null;
-
-  const {data:records,error:recordsError}=await supabaseClient
-    .from('annual_settlements')
-    .select('id,settlement_year,account_user_id,settlement_for,amount,settlement_date,receiver_name,delivered_by_name,note,created_by,created_at,legacy_no,is_historical,import_source,delivered_by_user_id')
-    .eq('delivered_by_user_id',state.annualSettlementUserId)
-    .order('settlement_date',{ascending:false})
-    .order('created_at',{ascending:false});
-
-  if(recordsError) throw recordsError;
-  state.annualSettlementRecords=(records||[]).map(r=>({
-    id:r.id,
-    year:r.settlement_year,
-    userId:r.account_user_id,
-    settlementFor:r.settlement_for,
-    amount:Number(r.amount||0),
-    date:r.settlement_date,
-    receiver:r.receiver_name,
-    deliveredBy:r.delivered_by_name,
-    note:r.note||'',
-    createdBy:r.created_by,
-    createdAt:r.created_at,
-    legacyNo:r.legacy_no,
-    isHistorical:!!r.is_historical,
-    importSource:r.import_source||''
-  }));
-}
 
 function annualSettlementView(){
   if(state.currentUser.role!=='مدير مشروع'){
