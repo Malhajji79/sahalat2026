@@ -262,7 +262,36 @@ function getUserAccountMetrics(username){
     });
   });
 
-  const expectedMonthlyCollection=activeLoans.reduce((s,l)=>s+Number(l.installment||0),0);
+  const currentMonthLoanCutoff = new Date(y, m, 26);
+
+const expectedMonthlyCollection = activeLoans
+  .filter(l => {
+    const d = loanDateObj(l);
+
+    // If there is no valid loan date, do not include it.
+    if (!d) return false;
+
+    // Loans before the 26th of the current month are included.
+    // Loans dated 26th through month-end are excluded.
+    return d < currentMonthLoanCutoff;
+  })
+  .reduce((s, l) => {
+    const remaining = Math.max(
+      0,
+      Number(l.total || 0) - Number(l.paid || 0)
+    );
+
+    return s + Math.min(
+      Number(l.installment || 0),
+      remaining
+    );
+  }, 0);
+
+const remainingThisMonth = Math.max(
+  0,
+  expectedMonthlyCollection - collectedThisMonth
+); 
+  
   const remainingThisMonth=Math.max(0,expectedMonthlyCollection-collectedThisMonth);
 
   return {
