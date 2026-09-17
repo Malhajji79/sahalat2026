@@ -7,9 +7,6 @@ function getLoanShares(date=todayISO()){
   return {user:policy.user,owner:policy.owner};
 }
 
-
-
-
 function calcLoan(amount, months, generalDiscount, userDiscount, adminDiscount, sharePercentages){
   // نحفظ الحساب الدقيق داخليًا، لكن العرض والسداد الدوري يكونان بالريال الصحيح فقط.
   const baseRate = Number(state.loanRates?.[months]??0);
@@ -39,12 +36,13 @@ function calcLoan(amount, months, generalDiscount, userDiscount, adminDiscount, 
   };
 }
 
+function canManageUsers(){
+  return state.currentUser?.role === 'أدمن';
+}
 
-
-
-;
-function canManageUsers(){ return state.currentUser?.role === 'أدمن'; }
-function canChangeLimits(){ return ['أدمن','مدير مشروع'].includes(state.currentUser?.role); }
+function canChangeLimits(){
+  return ['أدمن','مدير مشروع'].includes(state.currentUser?.role);
+}
 
 function canAccessAnalytics(){
   if(!state.currentUser) return false;
@@ -53,133 +51,296 @@ function canAccessAnalytics(){
   return false;
 }
 
-
-;
 function calcRepaymentPeriodLoan(loan, months){
   const shares=getLoanShares(loan.loanDate);
+
   return calcLoan(
-    Number(loan.amount||0), months,
+    Number(loan.amount||0),
+    months,
     Number(loan.generalDiscount||0),
     Number(loan.userDiscount||0),
-    Number(loan.adminDiscount||0), shares
+    Number(loan.adminDiscount||0),
+    shares
   );
 }
 
-
-;
 function analyticsUsers(){
-  return state.users.filter(u=>u.dbStatus==='active' && u.dbRole!=='admin');
+  return state.users.filter(
+    u=>u.dbStatus==='active' && u.dbRole!=='admin'
+  );
 }
+
 function analyticsLoanDate(l){
   if(l.loanDate) return new Date(l.loanDate+'T00:00:00');
   if(l.createdAt) return new Date(l.createdAt);
   return null;
 }
+
 function collectionYearDateRange(row){
   if(!row?.startDate || !row?.endDate) return null;
+
   return {
     start:new Date(row.startDate+'T00:00:00'),
     end:new Date(row.endDate+'T23:59:59')
   };
 }
+
 function analyticsPeriods(mode){
   const today=new Date();
+
   const loanDates=state.loans
     .filter(l=>['active','closed'].includes(l.dbStatus))
     .map(analyticsLoanDate)
     .filter(Boolean);
-  const earliest=loanDates.length?new Date(Math.min(...loanDates.map(d=>d.getTime()))):null;
+
+  const earliest=loanDates.length
+    ? new Date(Math.min(...loanDates.map(d=>d.getTime())))
+    : null;
 
   const years=(state.collectionYears||[]).filter(y=>{
     const r=collectionYearDateRange(y);
+
     if(!r) return false;
     if(r.start>today) return false;
     if(earliest && r.end<earliest) return false;
+
     return true;
   });
 
   const periods=[];
+
   years.forEach(y=>{
     const r=collectionYearDateRange(y);
+
     if(mode==='half'){
-      const totalDays=Math.floor((r.end-r.start)/(24*60*60*1000))+1;
+      const totalDays=
+        Math.floor((r.end-r.start)/(24*60*60*1000))+1;
+
       const firstDays=Math.ceil(totalDays/2);
+
       const midEnd=new Date(r.start);
       midEnd.setDate(midEnd.getDate()+firstDays-1);
+
       const secondStart=new Date(midEnd);
       secondStart.setDate(secondStart.getDate()+1);
-      periods.push({key:`${y.year}-H1`,label:`${arNum(y.year)} - ${tx('النصف الأول','First Half')}`,year:y.year,half:1,start:r.start,end:new Date(midEnd.getFullYear(),midEnd.getMonth(),midEnd.getDate(),23,59,59)});
-      periods.push({key:`${y.year}-H2`,label:`${arNum(y.year)} - ${tx('النصف الثاني','Second Half')}`,year:y.year,half:2,start:new Date(secondStart.getFullYear(),secondStart.getMonth(),secondStart.getDate()),end:r.end});
+
+      periods.push({
+        key:`${y.year}-H1`,
+        label:`${arNum(y.year)} - ${tx('النصف الأول','First Half')}`,
+        year:y.year,
+        half:1,
+        start:r.start,
+        end:new Date(
+          midEnd.getFullYear(),
+          midEnd.getMonth(),
+          midEnd.getDate(),
+          23,59,59
+        )
+      });
+
+      periods.push({
+        key:`${y.year}-H2`,
+        label:`${arNum(y.year)} - ${tx('النصف الثاني','Second Half')}`,
+        year:y.year,
+        half:2,
+        start:new Date(
+          secondStart.getFullYear(),
+          secondStart.getMonth(),
+          secondStart.getDate()
+        ),
+        end:r.end
+      });
+
     }else{
-      periods.push({key:String(y.year),label:arNum(y.year),year:y.year,start:r.start,end:r.end});
+      periods.push({
+        key:String(y.year),
+        label:arNum(y.year),
+        year:y.year,
+        start:r.start,
+        end:r.end
+      });
     }
   });
+
   return periods;
 }
+
 function analyticsPeriodMatch(d,p,mode){
   if(!d || !p?.start || !p?.end) return false;
   return d>=p.start && d<=p.end;
 }
 
 function analyticsActualRecentForUser(u, months=6){
-  const now=new Date(); const start=new Date(now.getFullYear(),now.getMonth()-months+1,1);
-  return state.loans.filter(l=>l.assignedUserId===u.id && ['active','closed'].includes(l.dbStatus)).reduce((sum,l)=>sum+(l.payments||[]).reduce((s,p)=>{
-    const d=p.paymentDate?new Date(p.paymentDate+'T00:00:00'):(p.createdAt?new Date(p.createdAt):null);
-    return s+(d&&d>=start?Number(p.amount||0):0);
-  },0),0);
-}
-function analyticsEffectiveness(u, m, maxLoans){ if(!m) return {score:0,collectionRate:0,closeRate:0,activity:0};
-  const expected6=Number(m.expectedMonthlyCollection||0)*6;
-  const actual6=analyticsActualRecentForUser(u,6);
-  const collectionRate=expected6>0?Math.min(150,(actual6/expected6)*100):(actual6>0?100:0);
-  const closeRate=m.totalCount?m.closedCount/m.totalCount*100:0;
-  const activity=m.totalCount/maxLoans*100;
-  // Main weight is actual collection versus expected collection, as agreed.
-  const score=Math.min(100, collectionRate*.65 + closeRate*.20 + activity*.15);
-  return {score,collectionRate,closeRate,activity,actual6,expected6};
+  const now=new Date();
+
+  const start=new Date(
+    now.getFullYear(),
+    now.getMonth()-months+1,
+    1
+  );
+
+  return state.loans
+    .filter(
+      l=>
+        l.assignedUserId===u.id &&
+        ['active','closed'].includes(l.dbStatus)
+    )
+    .reduce(
+      (sum,l)=>
+        sum+(l.payments||[]).reduce((s,p)=>{
+          const d=p.paymentDate
+            ? new Date(p.paymentDate+'T00:00:00')
+            : (p.createdAt ? new Date(p.createdAt) : null);
+
+          return s+(d&&d>=start ? Number(p.amount||0) : 0);
+        },0),
+      0
+    );
 }
 
-;
+function analyticsEffectiveness(u, m, maxLoans){
+  if(!m){
+    return {
+      score:0,
+      collectionRate:0,
+      closeRate:0,
+      activity:0
+    };
+  }
+
+  const expected6=Number(m.expectedMonthlyCollection||0)*6;
+  const actual6=analyticsActualRecentForUser(u,6);
+
+  const collectionRate=expected6>0
+    ? Math.min(150,(actual6/expected6)*100)
+    : (actual6>0 ? 100 : 0);
+
+  const closeRate=m.totalCount
+    ? m.closedCount/m.totalCount*100
+    : 0;
+
+  const activity=m.totalCount/maxLoans*100;
+
+  // Main weight is actual collection versus expected collection, as agreed.
+  const score=Math.min(
+    100,
+    collectionRate*.65 +
+    closeRate*.20 +
+    activity*.15
+  );
+
+  return {
+    score,
+    collectionRate,
+    closeRate,
+    activity,
+    actual6,
+    expected6
+  };
+}
+
 function activeCapitalMovements(){
-  return (state.capitalTransfers||[]).filter(t=>t.entryKind==='transfer' && t.status==='active');
+  return (state.capitalTransfers||[])
+    .filter(
+      t=>
+        t.entryKind==='transfer' &&
+        t.status==='active'
+    );
 }
 
 function userCapitalMovementMetrics(user){
   const rows=activeCapitalMovements();
+
   let ownerToUser=0;
   let userToOwner=0;
   let userToUserIn=0;
   let userToUserOut=0;
 
   rows.forEach(t=>{
-    if(t.dbType==='owner_to_user' && t.toUserId===user.id) ownerToUser+=Number(t.amount||0);
-    if(t.dbType==='user_to_owner' && t.fromUserId===user.id) userToOwner+=Number(t.amount||0);
+    if(
+      t.dbType==='owner_to_user' &&
+      t.toUserId===user.id
+    ){
+      ownerToUser+=Number(t.amount||0);
+    }
+
+    if(
+      t.dbType==='user_to_owner' &&
+      t.fromUserId===user.id
+    ){
+      userToOwner+=Number(t.amount||0);
+    }
+
     if(t.dbType==='user_to_user'){
-      if(t.toUserId===user.id) userToUserIn+=Number(t.amount||0);
-      if(t.fromUserId===user.id) userToUserOut+=Number(t.amount||0);
+      if(t.toUserId===user.id){
+        userToUserIn+=Number(t.amount||0);
+      }
+
+      if(t.fromUserId===user.id){
+        userToUserOut+=Number(t.amount||0);
+      }
     }
   });
 
-  return {ownerToUser,userToOwner,userToUserIn,userToUserOut};
+  return {
+    ownerToUser,
+    userToOwner,
+    userToUserIn,
+    userToUserOut
+  };
 }
 
 function realizedRightsForLoan(l){
   const totalDue=Number(l.total||0);
   const principal=Number(l.amount||0);
-  const paid=Math.min(Number(l.paid||0),totalDue);
-  const finalInterest=Math.max(0,Number(l.finalInterest||0));
 
-  if(totalDue<=0 || paid<=0 || finalInterest<=0){
-    return {user:0,owner:0,realizedInterest:0};
+  const paid=Math.min(
+    Number(l.paid||0),
+    totalDue
+  );
+
+  const finalInterest=Math.max(
+    0,
+    Number(l.finalInterest||0)
+  );
+
+  if(
+    totalDue<=0 ||
+    paid<=0 ||
+    finalInterest<=0
+  ){
+    return {
+      user:0,
+      owner:0,
+      realizedInterest:0
+    };
   }
 
   // Interest is realized proportionally to actual cash collected.
-  const realizedInterest=Math.min(finalInterest, finalInterest*(paid/totalDue));
-  const userTarget=Math.max(0,Number(l.userNet||0));
-  const ownerTarget=Math.max(0,Number(l.adminNet||0));
+  const realizedInterest=Math.min(
+    finalInterest,
+    finalInterest*(paid/totalDue)
+  );
+
+  const userTarget=Math.max(
+    0,
+    Number(l.userNet||0)
+  );
+
+  const ownerTarget=Math.max(
+    0,
+    Number(l.adminNet||0)
+  );
+
   const targetSum=userTarget+ownerTarget;
 
-  if(targetSum<=0) return {user:0,owner:0,realizedInterest};
+  if(targetSum<=0){
+    return {
+      user:0,
+      owner:0,
+      realizedInterest
+    };
+  }
 
   return {
     user:realizedInterest*(userTarget/targetSum),
@@ -188,29 +349,62 @@ function realizedRightsForLoan(l){
   };
 }
 
-
-;
 function getUserAccountMetrics(username){
-  const u=state.users.find(x=>x.username===username);
+  const u=state.users.find(
+    x=>x.username===username
+  );
+
   if(!u) return null;
 
-  const approvedLoans=state.loans.filter(l=>
-    l.assignedUserId===u.id &&
-    ['active','closed'].includes(l.dbStatus)
+  const approvedLoans=state.loans.filter(
+    l=>
+      l.assignedUserId===u.id &&
+      ['active','closed'].includes(l.dbStatus)
   );
-  const activeLoans=approvedLoans.filter(l=>l.dbStatus==='active');
-  const closedLoans=approvedLoans.filter(l=>l.dbStatus==='closed');
 
-  const totalLent=approvedLoans.reduce((s,l)=>s+Number(l.amount||0),0);
-  const totalCollected=approvedLoans.reduce((s,l)=>s+Number(l.paid||0),0);
-  const totalOutstanding=approvedLoans.reduce((s,l)=>s+Math.max(0,Number(l.total||0)-Number(l.paid||0)),0);
-  const targetUserRight=approvedLoans.reduce((s,l)=>s+Number(l.userNet||0),0);
-  const targetOwnerRight=approvedLoans.reduce((s,l)=>s+Number(l.adminNet||0),0);
+  const activeLoans=approvedLoans.filter(
+    l=>l.dbStatus==='active'
+  );
+
+  const closedLoans=approvedLoans.filter(
+    l=>l.dbStatus==='closed'
+  );
+
+  const totalLent=approvedLoans.reduce(
+    (s,l)=>s+Number(l.amount||0),
+    0
+  );
+
+  const totalCollected=approvedLoans.reduce(
+    (s,l)=>s+Number(l.paid||0),
+    0
+  );
+
+  const totalOutstanding=approvedLoans.reduce(
+    (s,l)=>
+      s+Math.max(
+        0,
+        Number(l.total||0)-Number(l.paid||0)
+      ),
+    0
+  );
+
+  const targetUserRight=approvedLoans.reduce(
+    (s,l)=>s+Number(l.userNet||0),
+    0
+  );
+
+  const targetOwnerRight=approvedLoans.reduce(
+    (s,l)=>s+Number(l.adminNet||0),
+    0
+  );
 
   let realizedUserRight=0;
   let realizedOwnerRight=0;
+
   approvedLoans.forEach(l=>{
     const r=realizedRightsForLoan(l);
+
     realizedUserRight+=r.user;
     realizedOwnerRight+=r.owner;
   });
@@ -220,178 +414,354 @@ function getUserAccountMetrics(username){
 
   // base_capital is the live balance maintained by capital-movement DB functions.
   // Available bank balance also accounts for loan principal leaving and repayments returning.
-  const transferredUser=Number(state.settlementTransferTotals[String(u.id)]?.user||0);
-  const transferredOwner=Number(state.settlementTransferTotals[String(u.id)]?.owner||0);
+  const transferredUser=Number(
+    state.settlementTransferTotals[String(u.id)]?.user||0
+  );
+
+  const transferredOwner=Number(
+    state.settlementTransferTotals[String(u.id)]?.owner||0
+  );
 
   // Available bank balance =
   // base capital - total lent + total collected
   // - transferred to user - transferred to owner.
-  const bankAfterCollection=baseCapital-totalLent+totalCollected-transferredUser-transferredOwner;
+  const bankAfterCollection=
+    baseCapital -
+    totalLent +
+    totalCollected -
+    transferredUser -
+    transferredOwner;
 
   const now=new Date();
   const y=now.getFullYear();
   const m=now.getMonth();
 
   const loanDateObj=l=>{
-    if(l.loanDate) return new Date(l.loanDate+'T00:00:00');
-    if(l.createdAt) return new Date(l.createdAt);
+    if(l.loanDate){
+      return new Date(l.loanDate+'T00:00:00');
+    }
+
+    if(l.createdAt){
+      return new Date(l.createdAt);
+    }
+
     return null;
   };
 
   const lentThisMonth=approvedLoans
-    .filter(l=>{const d=loanDateObj(l);return d&&d.getFullYear()===y&&d.getMonth()===m;})
-    .reduce((s,l)=>s+Number(l.amount||0),0);
+    .filter(l=>{
+      const d=loanDateObj(l);
+
+      return (
+        d &&
+        d.getFullYear()===y &&
+        d.getMonth()===m
+      );
+    })
+    .reduce(
+      (s,l)=>s+Number(l.amount||0),
+      0
+    );
 
   const lentThisYear=approvedLoans
-    .filter(l=>{const d=loanDateObj(l);return d&&d.getFullYear()===y;})
-    .reduce((s,l)=>s+Number(l.amount||0),0);
+    .filter(l=>{
+      const d=loanDateObj(l);
 
-  let collectedThisMonth=0; // 6th current month through 25th next month
+      return (
+        d &&
+        d.getFullYear()===y
+      );
+    })
+    .reduce(
+      (s,l)=>s+Number(l.amount||0),
+      0
+    );
+
+  // التحصيل الفعلي:
+  // من يوم 6 من الشهر الحالي إلى يوم 25 من الشهر التالي.
+  let collectedThisMonth=0;
   let paymentCount=0;
+
   approvedLoans.forEach(l=>{
     (l.payments||[]).forEach(p=>{
       paymentCount++;
-      const d=p.paymentDate ? new Date(p.paymentDate+'T00:00:00') : (p.createdAt?new Date(p.createdAt):null);
+
+      const d=p.paymentDate
+        ? new Date(p.paymentDate+'T00:00:00')
+        : (
+            p.createdAt
+              ? new Date(p.createdAt)
+              : null
+          );
+
       if(d){
-        const collectionStart=new Date(y,m,6);
-        const collectionEnd=new Date(y,m+1,25,23,59,59,999);
-        if(d>=collectionStart && d<=collectionEnd){
+        const collectionStart=
+          new Date(y,m,6);
+
+        const collectionEnd=
+          new Date(
+            y,
+            m+1,
+            25,
+            23,59,59,999
+          );
+
+        if(
+          d>=collectionStart &&
+          d<=collectionEnd
+        ){
           collectedThisMonth+=Number(p.amount||0);
         }
       }
     });
   });
 
-  const currentMonthLoanCutoff = new Date(y, m, 26);
+  // ============================================================
+  // Expected Monthly Collection
+  //
+  // القاعدة المعتمدة:
+  // القروض قبل يوم 26 من الشهر الحالي تدخل في المتوقع.
+  // القروض من يوم 26 إلى نهاية الشهر الحالي لا تدخل في المتوقع
+  // لهذه الدورة، وتدخل في الدورة التالية.
+  // ============================================================
 
-const expectedMonthlyCollection = activeLoans
-  .filter(l => {
-    const d = loanDateObj(l);
+  const currentMonthLoanCutoff=
+    new Date(y,m,26);
 
-    // If there is no valid loan date, do not include it.
-    if (!d) return false;
+  const expectedMonthlyCollection=
+    activeLoans
+      .filter(l=>{
+        const d=loanDateObj(l);
 
-    // Loans before the 26th of the current month are included.
-    // Loans dated 26th through month-end are excluded.
-    return d < currentMonthLoanCutoff;
-  })
-  .reduce((s, l) => {
-    const remaining = Math.max(
-      0,
-      Number(l.total || 0) - Number(l.paid || 0)
-    );
+        // لا نحتسب قرضًا بدون تاريخ صالح.
+        if(!d) return false;
 
-    return s + Math.min(
-      Number(l.installment || 0),
-      remaining
-    );
-  }, 0);
+        // قبل يوم 26 يدخل.
+        // يوم 26 وما بعده لا يدخل في الدورة الحالية.
+        return d<currentMonthLoanCutoff;
+      })
+      .reduce((s,l)=>{
+        const remaining=Math.max(
+          0,
+          Number(l.total||0) -
+          Number(l.paid||0)
+        );
 
-const remainingThisMonth = Math.max(
-  0,
-  expectedMonthlyCollection - collectedThisMonth
-); 
-  
-  const remainingThisMonth=Math.max(0,expectedMonthlyCollection-collectedThisMonth);
+        // لا نحتسب أكثر من الرصيد المتبقي للقرض.
+        const expectedForLoan=Math.min(
+          Number(l.installment||0),
+          remaining
+        );
+
+        return s+expectedForLoan;
+      },0);
+
+  // المتبقي للتحصيل =
+  // المتوقع - المحصل فعليًا
+  // ولا يمكن أن يكون أقل من صفر.
+  const remainingThisMonth=Math.max(
+    0,
+    expectedMonthlyCollection -
+    collectedThisMonth
+  );
 
   return {
     user:u,
     baseCapital,
+
     totalLent,
-    activeLent:activeLoans.reduce((sum,loan)=>sum+Number(loan.amount||0),0),
+
+    activeLent:activeLoans.reduce(
+      (sum,loan)=>
+        sum+Number(loan.amount||0),
+      0
+    ),
+
     totalCollected,
     totalOutstanding,
+
     targetUserRight,
     targetOwnerRight,
-    realizedUserRight:Math.max(0, realizedUserRight - transferredUser),
-    realizedOwnerRight:Math.max(0, realizedOwnerRight - transferredOwner),
+
+    realizedUserRight:Math.max(
+      0,
+      realizedUserRight-transferredUser
+    ),
+
+    realizedOwnerRight:Math.max(
+      0,
+      realizedOwnerRight-transferredOwner
+    ),
+
     transferredUser,
     transferredOwner,
-    transferredBetweenUsersOut:capital.userToUserOut,
+
+    transferredBetweenUsersOut:
+      capital.userToUserOut,
+
     bankAfterCollection,
+
     activeCount:activeLoans.length,
     closedCount:closedLoans.length,
     totalCount:approvedLoans.length,
+
     paymentCount,
+
     expectedMonthlyCollection,
     remainingThisMonth,
+
     lentThisMonth,
     collectedThisMonth,
     lentThisYear,
-    finalSettlementTotal:Math.max(0, totalLent + targetUserRight + targetOwnerRight - transferredUser - transferredOwner - totalCollected)
+
+    finalSettlementTotal:Math.max(
+      0,
+      totalLent +
+      targetUserRight +
+      targetOwnerRight -
+      transferredUser -
+      transferredOwner -
+      totalCollected
+    )
   };
 }
 
-
-
-
-
-
-
-;
 function paymentActionDeadline(p){
   if(!p) return 0;
-  const stamp=p.lastEditedAt || p.createdAt;
-  return (stamp ? new Date(stamp).getTime() : 0) + 24*60*60*1000;
+
+  const stamp=
+    p.lastEditedAt ||
+    p.createdAt;
+
+  return (
+    stamp
+      ? new Date(stamp).getTime()
+      : 0
+  ) + 24*60*60*1000;
 }
 
 function privilegedPaymentActionDeadline(p){
   if(!p || !p.createdAt) return 0;
-  // للأدمن والمدير: خمسة أيام من created_at الأصلي، والتعديل لا يجدد المهلة.
-  return new Date(p.createdAt).getTime() + 5*24*60*60*1000;
+
+  // للأدمن والمدير: خمسة أيام من created_at الأصلي،
+  // والتعديل لا يجدد المهلة.
+  return (
+    new Date(p.createdAt).getTime() +
+    5*24*60*60*1000
+  );
 }
 
 function paymentActionWindowOpen(p){
-  return !!p && Date.now() <= paymentActionDeadline(p);
+  return (
+    !!p &&
+    Date.now()<=paymentActionDeadline(p)
+  );
 }
 
 function privilegedPaymentActionWindowOpen(p){
-  return !!p && Date.now() <= privilegedPaymentActionDeadline(p);
+  return (
+    !!p &&
+    Date.now()<=privilegedPaymentActionDeadline(p)
+  );
 }
 
 function isPaymentPrivilegedRole(){
-  return !!state.currentUser && ['أدمن','مدير مشروع'].includes(state.currentUser.role);
+  return (
+    !!state.currentUser &&
+    ['أدمن','مدير مشروع']
+      .includes(state.currentUser.role)
+  );
 }
 
 function lastActivePayment(l){
-  if(!l || !Array.isArray(l.payments) || !l.payments.length) return null;
+  if(
+    !l ||
+    !Array.isArray(l.payments) ||
+    !l.payments.length
+  ){
+    return null;
+  }
+
   return l.payments[l.payments.length-1];
 }
 
 function canModifyPayment(l,p){
-  if(!l || !p || !state.currentUser) return false;
+  if(
+    !l ||
+    !p ||
+    !state.currentUser
+  ){
+    return false;
+  }
 
-  // الأدمن ومدير المشروع: أي دفعة لأي مستخدم خلال 5 أيام من إنشائها،
+  // الأدمن ومدير المشروع:
+  // أي دفعة لأي مستخدم خلال 5 أيام من إنشائها،
   // بما في ذلك دفعات القروض التي أصبحت مغلقة/مسددة.
-  if(isPaymentPrivilegedRole()) return privilegedPaymentActionWindowOpen(p);
+  if(isPaymentPrivilegedRole()){
+    return privilegedPaymentActionWindowOpen(p);
+  }
 
-  // المستخدم العادي: نفس القاعدة القديمة، آخر دفعة سجلها فقط وخلال 24 ساعة.
+  // المستخدم العادي:
+  // آخر دفعة سجلها فقط وخلال 24 ساعة.
   const last=lastActivePayment(l);
-  if(!last || last.id!==p.id) return false;
-  if(p.createdById!==state.currentUser.id) return false;
+
+  if(!last || last.id!==p.id){
+    return false;
+  }
+
+  if(p.createdById!==state.currentUser.id){
+    return false;
+  }
+
   return paymentActionWindowOpen(p);
 }
 
-
-
-;
 function currentCollectionYearExpectedInterest(userId){
   const today=new Date();
-  const currentYear=(state.collectionYears||[]).find(y=>{
-    if(!y?.startDate || !y?.endDate) return false;
-    const start=new Date(y.startDate+'T00:00:00');
-    const end=new Date(y.endDate+'T23:59:59');
-    return today>=start && today<=end;
-  });
+
+  const currentYear=
+    (state.collectionYears||[])
+      .find(y=>{
+        if(
+          !y?.startDate ||
+          !y?.endDate
+        ){
+          return false;
+        }
+
+        const start=
+          new Date(
+            y.startDate+'T00:00:00'
+          );
+
+        const end=
+          new Date(
+            y.endDate+'T23:59:59'
+          );
+
+        return (
+          today>=start &&
+          today<=end
+        );
+      });
 
   if(!currentYear){
-    return {collectionYear:null,userShare:0,ownerShare:0,totalInterest:0};
+    return {
+      collectionYear:null,
+      userShare:0,
+      ownerShare:0,
+      totalInterest:0
+    };
   }
 
-  const row=(state.expectedInterestByCollectionYear||[]).find(r=>
-    String(r.userId||'')===String(userId||'') &&
-    Number(r.collectionYear)===Number(currentYear.year)
-  );
+  const row=
+    (state.expectedInterestByCollectionYear||[])
+      .find(r=>
+        String(r.userId||'')===
+          String(userId||'') &&
+        Number(r.collectionYear)===
+          Number(currentYear.year)
+      );
 
   return {
     collectionYear:currentYear.year,
@@ -401,12 +771,39 @@ function currentCollectionYearExpectedInterest(userId){
   };
 }
 
-
-;
 function loanFilterOptions(){
   const scoped=visibleLoansForCurrentUser();
-  const creators=[...new Set(scoped.map(l=>l.createdBy).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'ar'));
-  const types=[...new Set(scoped.map(l=>l.type).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'ar'));
-  return {creators,types};
-}
 
+  const creators=[
+    ...new Set(
+      scoped
+        .map(l=>l.createdBy)
+        .filter(Boolean)
+    )
+  ].sort(
+    (a,b)=>
+      String(a).localeCompare(
+        String(b),
+        'ar'
+      )
+  );
+
+  const types=[
+    ...new Set(
+      scoped
+        .map(l=>l.type)
+        .filter(Boolean)
+    )
+  ].sort(
+    (a,b)=>
+      String(a).localeCompare(
+        String(b),
+        'ar'
+      )
+  );
+
+  return {
+    creators,
+    types
+  };
+}
