@@ -89,7 +89,7 @@ async function refreshAuthenticatedData(){
 // - Closing the tab/browser => next open requires login
 // ======================================================
 const SAHALAT_IDLE_LOGOUT_MS = 5 * 60 * 1000;
-const SAHALAT_IDLE_CHECK_MS = 15 * 1000;
+const SAHALAT_IDLE_CHECK_MS = 5 * 1000;
 const SAHALAT_TAB_SESSION_KEY = 'sahalat_tab_session_active';
 const SAHALAT_LAST_ACTIVITY_KEY = 'sahalat_last_activity';
 
@@ -161,11 +161,15 @@ async function checkSahalatIdleTimeout(){
   }
 }
 
-function startSahalatSessionSecurity(){
+function startSahalatSessionSecurity(resetActivity=false){
   if(!state.authUser) return;
 
-  // Start a fresh inactivity period after successful login/app load.
-  recordSahalatActivity();
+  // A successful login starts a fresh inactivity period. A reload keeps the timestamp.
+  if(resetActivity || !sessionStorage.getItem(SAHALAT_LAST_ACTIVITY_KEY)){
+    recordSahalatActivity();
+  } else {
+    checkSahalatIdleTimeout();
+  }
 
   // Add activity listeners only once.
   if(!sahalatSecurityStarted){
@@ -175,7 +179,7 @@ function startSahalatSessionSecurity(){
       'pointerdown',
       'keydown',
       'touchstart',
-      'scroll'
+      'wheel'
     ];
 
     activityEvents.forEach(eventName => {
