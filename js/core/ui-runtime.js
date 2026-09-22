@@ -194,6 +194,8 @@ function bindLogin(){
       state.authUser=data.user;
       button.textContent=state.lang==='en'?'Loading account…':'جاري تحميل الحساب…';
       await loadCurrentProfile(data.user);
+      // Start/reset the 5-minute inactivity timer immediately after a successful login.
+      startSahalatSessionSecurity(true);
       state.page='dashboard';
       state.connectionError='';
       render();
