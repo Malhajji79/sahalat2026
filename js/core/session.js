@@ -82,67 +82,133 @@ async function refreshAuthenticatedData(){
   render();
 }
 
-
-
-
 // ======================================================
-// Session security: auto logout
-// - 5 minutes without activity => sign out
+// Session security: reliable auto logout
+// - 5 minutes without real activity => sign out
+// - Works after background/sleep by comparing timestamps
 // - Closing the tab/browser => next open requires login
 // ======================================================
 const SAHALAT_IDLE_LOGOUT_MS = 5 * 60 * 1000;
+const SAHALAT_IDLE_CHECK_MS = 15 * 1000;
 const SAHALAT_TAB_SESSION_KEY = 'sahalat_tab_session_active';
-const SAHALAT_EXISTING_TAB_SESSION = sessionStorage.getItem(SAHALAT_TAB_SESSION_KEY) === '1';
+const SAHALAT_LAST_ACTIVITY_KEY = 'sahalat_last_activity';
+
+const SAHALAT_EXISTING_TAB_SESSION =
+  sessionStorage.getItem(SAHALAT_TAB_SESSION_KEY) === '1';
+
 sessionStorage.setItem(SAHALAT_TAB_SESSION_KEY, '1');
-let sahalatIdleTimer = null;
+
+let sahalatIdleInterval = null;
 let sahalatLogoutInProgress = false;
+let sahalatSecurityStarted = false;
+
+function recordSahalatActivity(){
+  if(!state.authUser || sahalatLogoutInProgress) return;
+  sessionStorage.setItem(
+    SAHALAT_LAST_ACTIVITY_KEY,
+    String(Date.now())
+  );
+}
+
+function getSahalatLastActivity(){
+  const value = Number(
+    sessionStorage.getItem(SAHALAT_LAST_ACTIVITY_KEY)
+  );
+
+  return Number.isFinite(value) && value > 0
+    ? value
+    : Date.now();
+}
 
 async function sahalatAutoSignOut(){
   if(sahalatLogoutInProgress || !state.authUser) return;
+
   sahalatLogoutInProgress = true;
 
   try{
+    if(sahalatIdleInterval){
+      clearInterval(sahalatIdleInterval);
+      sahalatIdleInterval = null;
+    }
+
+    sessionStorage.removeItem(SAHALAT_LAST_ACTIVITY_KEY);
     sessionStorage.removeItem(SAHALAT_TAB_SESSION_KEY);
+
     await supabaseClient.auth.signOut();
   }catch(err){
     console.error('Automatic sign out failed:', err);
   }finally{
-    if(sahalatIdleTimer){
-      clearTimeout(sahalatIdleTimer);
-      sahalatIdleTimer = null;
-    }
-
     state.authSession = null;
     state.authUser = null;
     state.currentUser = null;
     state.accountUser = null;
     state.users = [];
+
     sahalatLogoutInProgress = false;
+
     await bootstrapApp();
   }
 }
 
-function resetSahalatIdleTimer(){
+async function checkSahalatIdleTimeout(){
   if(!state.authUser || sahalatLogoutInProgress) return;
 
-  if(sahalatIdleTimer) clearTimeout(sahalatIdleTimer);
-  sahalatIdleTimer = setTimeout(
-    sahalatAutoSignOut,
-    SAHALAT_IDLE_LOGOUT_MS
-  );
+  const idleFor =
+    Date.now() - getSahalatLastActivity();
+
+  if(idleFor >= SAHALAT_IDLE_LOGOUT_MS){
+    await sahalatAutoSignOut();
+  }
 }
 
 function startSahalatSessionSecurity(){
-  const activityEvents = [
-    'pointerdown',
-    'keydown',
-    'touchstart',
-    'scroll'
-  ];
+  if(!state.authUser) return;
 
-  activityEvents.forEach(eventName => {
-    window.addEventListener(eventName, resetSahalatIdleTimer, {passive:true});
-  });
+  // Start a fresh inactivity period after successful login/app load.
+  recordSahalatActivity();
 
-  resetSahalatIdleTimer();
+  // Add activity listeners only once.
+  if(!sahalatSecurityStarted){
+    sahalatSecurityStarted = true;
+
+    const activityEvents = [
+      'pointerdown',
+      'keydown',
+      'touchstart',
+      'scroll'
+    ];
+
+    activityEvents.forEach(eventName => {
+      window.addEventListener(
+        eventName,
+        recordSahalatActivity,
+        {passive:true}
+      );
+    });
+
+    // Important for tablets/phones:
+    // immediately check elapsed time when returning from background.
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible'){
+        checkSahalatIdleTimeout();
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      checkSahalatIdleTimeout();
+    });
+
+    window.addEventListener('pageshow', () => {
+      checkSahalatIdleTimeout();
+    });
+  }
+
+  if(sahalatIdleInterval){
+    clearInterval(sahalatIdleInterval);
+  }
+
+  sahalatIdleInterval = setInterval(
+    checkSahalatIdleTimeout,
+    SAHALAT_IDLE_CHECK_MS
+  );
 }
