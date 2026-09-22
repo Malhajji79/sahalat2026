@@ -38,8 +38,18 @@ async function bootstrapApp(){
     state.authSession=session;
     state.authUser=session?.user||null;
 
-    if(session?.user){
-      await loadCurrentProfile(session.user);
+    if(session?.user && !SAHALAT_EXISTING_TAB_SESSION){
+      // Supabase can persist its token after the tab/browser closes.
+      // A new tab/browser must start from the Sahalat login screen.
+      await supabaseClient.auth.signOut();
+      state.authSession=null;
+      state.authUser=null;
+      state.currentUser=null;
+    }
+
+    if(state.authUser){
+      await loadCurrentProfile(state.authUser);
+      startSahalatSessionSecurity();
     }else{
       state.currentUser=null;
       state.users=[];
@@ -74,3 +84,65 @@ async function refreshAuthenticatedData(){
 
 
 
+
+// ======================================================
+// Session security: auto logout
+// - 5 minutes without activity => sign out
+// - Closing the tab/browser => next open requires login
+// ======================================================
+const SAHALAT_IDLE_LOGOUT_MS = 5 * 60 * 1000;
+const SAHALAT_TAB_SESSION_KEY = 'sahalat_tab_session_active';
+const SAHALAT_EXISTING_TAB_SESSION = sessionStorage.getItem(SAHALAT_TAB_SESSION_KEY) === '1';
+sessionStorage.setItem(SAHALAT_TAB_SESSION_KEY, '1');
+let sahalatIdleTimer = null;
+let sahalatLogoutInProgress = false;
+
+async function sahalatAutoSignOut(){
+  if(sahalatLogoutInProgress || !state.authUser) return;
+  sahalatLogoutInProgress = true;
+
+  try{
+    sessionStorage.removeItem(SAHALAT_TAB_SESSION_KEY);
+    await supabaseClient.auth.signOut();
+  }catch(err){
+    console.error('Automatic sign out failed:', err);
+  }finally{
+    if(sahalatIdleTimer){
+      clearTimeout(sahalatIdleTimer);
+      sahalatIdleTimer = null;
+    }
+
+    state.authSession = null;
+    state.authUser = null;
+    state.currentUser = null;
+    state.accountUser = null;
+    state.users = [];
+    sahalatLogoutInProgress = false;
+    await bootstrapApp();
+  }
+}
+
+function resetSahalatIdleTimer(){
+  if(!state.authUser || sahalatLogoutInProgress) return;
+
+  if(sahalatIdleTimer) clearTimeout(sahalatIdleTimer);
+  sahalatIdleTimer = setTimeout(
+    sahalatAutoSignOut,
+    SAHALAT_IDLE_LOGOUT_MS
+  );
+}
+
+function startSahalatSessionSecurity(){
+  const activityEvents = [
+    'pointerdown',
+    'keydown',
+    'touchstart',
+    'scroll'
+  ];
+
+  activityEvents.forEach(eventName => {
+    window.addEventListener(eventName, resetSahalatIdleTimer, {passive:true});
+  });
+
+  resetSahalatIdleTimer();
+}
