@@ -597,35 +597,75 @@ function repaymentPeriodAdminReviewView(){
     </div>`;
   }
 
+  const payments=Array.isArray(l.payments)?l.payments:[];
+  const currentRemaining=Math.max(0,Number(r.oldTotal||l.total||0)-Number(r.paidAtRequest||0));
+
   return html`
     <div class="toolbar">
       <button class="btn btn-secondary" id="adminRepaymentBackBtn">${tx('الرجوع لطلبات المراجعة','Back to Review Requests')}</button>
       <div class="muted">${tx('القرض رقم','Loan No.')} <strong>${l.id}</strong></div>
     </div>
 
-    <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px">
-      <div class="card">
-        <h3 class="section-title">${tx('الوضع الحالي','Current Position')}</h3>
-        <div class="summary-row"><span>${tx('المستخدم','User')}</span><strong>${r.requestedBy||'—'}</strong></div>
-        <div class="summary-row"><span>${tx('المستفيد','Beneficiary')}</span><strong>${l.beneficiary||'—'}</strong></div>
-        <div class="summary-row"><span>${tx('عدد الشهور الحالي','Current Months')}</span><strong>${r.oldMonths}</strong></div>
-        <div class="summary-row"><span>${tx('إجمالي السداد الحالي','Current Total Due')}</span><strong>${money(r.oldTotal)}</strong></div>
-        <div class="summary-row"><span>${tx('القسط الحالي','Current Installment')}</span><strong>${wholeMoney(r.oldInstallment)}</strong></div>
-        <div class="summary-row"><span>${tx('المدفوع حتى وقت الطلب','Paid at Request Time')}</span><strong>${money(r.paidAtRequest)}</strong></div>
-      </div>
-
-      <div class="card">
-        <h3 class="section-title">${tx('بعد مراجعة فترة السداد','After Repayment Period Review')}</h3>
-        <div class="summary-row"><span>عدد الشهور الجديد</span><strong>${r.requestedMonths}</strong></div>
-        <div class="summary-row"><span>${tx('إجمالي السداد الجديد','New Total Due')}</span><strong>${money(r.newTotal)}</strong></div>
-        <div class="summary-row"><span>${tx('القسط الشهري الجديد','New Monthly Installment')}</span><strong>${wholeMoney(r.newInstallment)}</strong></div>
-        <div class="summary-row"><span>${tx('المتبقي الجديد','New Remaining')}</span><strong>${money(r.newRemaining)}</strong></div>
-        <div class="summary-row"><span>${tx('حصة المستخدم الجديدة','New User Share')}</span><strong>${wholeMoney(r.newUserNet)}</strong></div>
-        <div class="summary-row"><span>${tx('حصة المالك الجديدة','New Owner Share')}</span><strong>${wholeMoney(r.newAdminNet)}</strong></div>
+    <div class="card" style="margin-bottom:18px">
+      <h3 class="section-title">${tx('بيانات القرض الأصلية','Original Loan Details')}</h3>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 24px">
+        <div>
+          <div class="summary-row"><span>${tx('رقم القرض','Loan No.')}</span><strong>${l.id}</strong></div>
+          <div class="summary-row"><span>${tx('المستفيد','Beneficiary')}</span><strong>${l.beneficiary||'—'}</strong></div>
+          <div class="summary-row"><span>${tx('رقم بطاقة الأحوال','National ID')}</span><strong>${l.nationalId||'—'}</strong></div>
+          <div class="summary-row"><span>${tx('رقم الجوال','Mobile')}</span><strong>${l.mobile||'—'}</strong></div>
+          <div class="summary-row"><span>${tx('تاريخ القرض','Loan Date')}</span><strong>${dateDisplay(l.loanDate)}</strong></div>
+        </div>
+        <div>
+          <div class="summary-row"><span>${tx('المستخدم المخصص له القرض','Assigned User')}</span><strong>${l.assignedUser||l.createdBy||'—'}</strong></div>
+          <div class="summary-row"><span>${tx('نوع القرض','Loan Type')}</span><strong>${displayLoanType(l.type)||'—'}</strong></div>
+          <div class="summary-row"><span>${tx('قيمة القرض','Loan Amount')}</span><strong>${wholeMoney(l.amount)}</strong></div>
+          <div class="summary-row"><span>${tx('عدد الدفعات المسجلة','Recorded Payments')}</span><strong>${payments.length}</strong></div>
+          <div class="summary-row"><span>${tx('المدفوع حتى وقت الطلب','Paid at Request Time')}</span><strong>${money(r.paidAtRequest)}</strong></div>
+        </div>
+        <div>
+          <div class="summary-row"><span>${tx('نسبة الفائدة الأساسية','Base Interest Rate')}</span><strong>${l.baseRate!=null ? percentDisplay(l.baseRate) : '—'}</strong></div>
+          <div class="summary-row"><span>${tx('الخصم العام','General Discount')}</span><strong>${l.generalDiscount!=null ? l.generalDiscount+'%' : '—'}</strong></div>
+          <div class="summary-row"><span>${tx('خصم المستخدم','User Discount')}</span><strong>${l.userDiscount!=null ? l.userDiscount+'%' : '—'}</strong></div>
+          <div class="summary-row"><span>${tx('خصم الأدمن','Admin Discount')}</span><strong>${l.adminDiscount!=null ? l.adminDiscount+'%' : '—'}</strong></div>
+          <div class="summary-row"><span>${tx('حصة المستخدم الحالية','Current User Share')}</span><strong>${l.userNet!=null ? wholeMoney(l.userNet) : '—'}</strong></div>
+          <div class="summary-row"><span>${tx('حصة المالك الحالية','Current Owner Share')}</span><strong>${l.adminNet!=null ? wholeMoney(l.adminNet) : '—'}</strong></div>
+        </div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:18px">
+    <div class="card" style="margin-bottom:18px;overflow-x:auto">
+      <h3 class="section-title">${tx('مقارنة الوضع الحالي مع المراجعة الجديدة','Current vs New Review Comparison')}</h3>
+      <table style="width:100%;min-width:650px">
+        <thead><tr>
+          <th>${tx('البيان','Item')}</th>
+          <th>${tx('الوضع الحالي','Current')}</th>
+          <th>${tx('بعد المراجعة','After Review')}</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>${tx('فترة السداد','Repayment Period')}</td><td><strong>${r.oldMonths} ${tx('شهر','months')}</strong></td><td><strong>${r.requestedMonths} ${tx('شهر','months')}</strong></td></tr>
+          <tr><td>${tx('نسبة الفائدة الأساسية','Base Interest Rate')}</td><td>${l.baseRate!=null?percentDisplay(l.baseRate):'—'}</td><td>${percentDisplay(r.newBaseRate)}</td></tr>
+          <tr><td>${tx('الفائدة الأساسية','Base Interest')}</td><td>${l.baseInterest!=null?wholeMoney(l.baseInterest):'—'}</td><td>${wholeMoney(r.newBaseInterest)}</td></tr>
+          <tr><td>${tx('الفائدة النهائية','Final Interest')}</td><td>${l.finalInterest!=null?wholeMoney(l.finalInterest):'—'}</td><td>${wholeMoney(r.newFinalInterest)}</td></tr>
+          <tr><td>${tx('حصة المستخدم','User Share')}</td><td>${l.userNet!=null?wholeMoney(l.userNet):'—'}</td><td>${wholeMoney(r.newUserNet)}</td></tr>
+          <tr><td>${tx('حصة المالك','Owner Share')}</td><td>${l.adminNet!=null?wholeMoney(l.adminNet):'—'}</td><td>${wholeMoney(r.newAdminNet)}</td></tr>
+          <tr><td>${tx('إجمالي السداد','Total Due')}</td><td>${money(r.oldTotal)}</td><td>${money(r.newTotal)}</td></tr>
+          <tr><td>${tx('المدفوع حتى وقت الطلب','Paid at Request Time')}</td><td>${money(r.paidAtRequest)}</td><td>${money(r.paidAtRequest)}</td></tr>
+          <tr><td>${tx('المتبقي','Remaining')}</td><td>${money(currentRemaining)}</td><td>${money(r.newRemaining)}</td></tr>
+          <tr><td>${tx('القسط الشهري','Monthly Installment')}</td><td>${wholeMoney(r.oldInstallment)}</td><td>${wholeMoney(r.newInstallment)}</td></tr>
+          <tr><td>${tx('مستحق التصفية / فروقات الكسور','Settlement / Rounding Difference')}</td><td>${money(r.oldSettlementDue)}</td><td>${money(r.newSettlementDue)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <h3 class="section-title">${tx('معلومات طلب المراجعة','Review Request Information')}</h3>
+      <div class="summary-row"><span>${tx('مقدم الطلب','Requested By')}</span><strong>${r.requestedBy||'—'}</strong></div>
+      <div class="summary-row"><span>${tx('تاريخ الطلب','Request Date')}</span><strong>${r.requestedAt?dateTimeDisplay(r.requestedAt):'—'}</strong></div>
+      <div class="summary-row"><span>${tx('الفترة المطلوبة','Requested Period')}</span><strong>${r.requestedMonths} ${tx('شهر','months')}</strong></div>
+    </div>
+
+    <div class="card">
       <div class="field">
         <label>${tx('ملاحظة الأدمن','Admin Note')}</label>
         <input id="adminRepaymentNote" type="text" placeholder="${tx('اختياري للاعتماد، ومطلوب عند الرفض','Optional for approval; required for rejection')}">
