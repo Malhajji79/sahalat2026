@@ -640,3 +640,52 @@ html[lang="en"] .sahalat-calendar-day {
   font-variant-numeric: lining-nums tabular-nums;
 }
 .english-number { font-size: inherit; line-height: inherit; }
+
+
+/* ===== Sahalat numeric colour rules =====
+   Normal numbers: #1840b8
+   Negative numbers: red
+   Dates: black
+*/
+.sahalat-number {
+  color: #1840b8 !important;
+}
+.sahalat-number.sahalat-negative {
+  color: #b91c1c !important;
+}
+.sahalat-date {
+  color: #000 !important;
+}
+
+/* Numeric entry fields are numeric values, so the whole field is blue. */
+input[type="number"],
+input[inputmode="numeric"] {
+  color: #1840b8 !important;
+}
+
+/* Telephone numbers are also numbers. */
+input[type="tel"],
+input[inputmode="tel"] {
+  color: #1840b8 !important;
+}
+
+/* Date controls must remain black. */
+input[type="date"],
+input.date-display,
+input.date-native,
+.custom-date-input input {
+  color: #000 !important;
+}
+
+/* Keep negative financial cells red even when an existing view sets red inline. */
+td[style*="color:#b91c1c"] .sahalat-number,
+td[style*="color: #b91c1c"] .sahalat-number {
+  color: #b91c1c !important;
+}
+
+/* Existing English-number font behavior is preserved without controlling colour. */
+html[lang="en"] .sahalat-number,
+html[lang="en"] .sahalat-date {
+  font-family: "Lora", Georgia, serif;
+  font-variant-numeric: lining-nums tabular-nums;
+}
