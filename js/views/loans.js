@@ -66,10 +66,10 @@ function loansView(){
     const paid = Number(l.paid||0);
     const remaining = Math.max(0, Number(l.total||0)-paid);
     const paidInWindow=hasPaymentInCurrentCollectionWindow(l);
-    return html`<tr class="${paidInWindow?'loan-paid-current-window':''}" data-loan-id="${l.id}" data-loan-creator="${l.createdBy||''}" data-loan-type="${l.type||''}">
+    return html`<tr class="${paidInWindow?'loan-paid-current-window':''}" data-loan-id="${l.id}" data-loan-creator="${l.createdBy||''}" data-loan-type="${l.type||''}" data-loan-amount="${Number(l.amount||0)}" data-loan-installment="${Number(l.installment||0)}" data-loan-paid="${paid}" data-loan-remaining="${remaining}">
       <td><button class="btn btn-secondary openLoan" data-id="${l.id}">${l.id}</button></td>
       <td>${l.beneficiary}</td>
-      <td>${l.createdBy || '—'}</td>
+      <td>${wholeMoney(l.installment||0)}</td>
       <td>${displayLoanType(l.type)}</td>
       <td>${wholeMoney(l.amount)}</td>
       <td>${wholeMoney(paid)}</td>
@@ -83,7 +83,7 @@ function loansView(){
     </tr>`;
   }));
 
-  const tableHead=html`<table><thead><tr><th>${tx('رقم القرض','Loan No.')}</th><th>${tx('المستفيد','Beneficiary')}</th><th>${tx('أنشأه','Created By')}</th><th>${tx('النوع','Type')}</th><th>${tx('المبلغ','Amount')}</th><th>${tx('المدفوع','Paid')}</th><th>${tx('المتبقي','Remaining')}</th><th>${tx('الحالة','Status')}</th><th>${tx('إجراء','Action')}</th></tr></thead>`;
+  const tableHead=html`<table><thead><tr><th>${tx('رقم القرض','Loan No.')}</th><th>${tx('المستفيد','Beneficiary')}</th><th>${tx('القسط الشهري','Monthly Installment')}</th><th>${tx('النوع','Type')}</th><th>${tx('المبلغ','Amount')}</th><th>${tx('المدفوع','Paid')}</th><th>${tx('المتبقي','Remaining')}</th><th>${tx('الحالة','Status')}</th><th>${tx('إجراء','Action')}</th></tr></thead>`;
 
   return html`
     
@@ -128,13 +128,24 @@ function loansView(){
       </div>
     `:''}
 
-    <details class="card loan-section" id="activeLoansSection" style="padding:0;overflow:hidden">
+    <details class="card loan-section" id="activeLoansSection" open style="padding:0;overflow:hidden">
       <summary style="padding:14px 16px;background:#ecfdf5;border-bottom:1px solid #d1fae5;font-weight:800;color:#166534">
         ${tx('القروض النشطة','Active Loans')} <span class="small" id="activeLoansCount">(${activeLoans.length})</span> <span class="small">${tx('إظهار / إخفاء','Show / Hide')}</span>
       </summary>
       <div class="table-wrap">
         ${tableHead}<tbody id="activeLoansBody">
-          ${activeLoans.length?loanRows(activeLoans):html`<tr class="empty-row"><td colspan="9" class="muted">${tx('لا توجد قروض نشطة.','No active loans.')}</td></tr>`}
+          ${activeLoans.length?html`
+            <tr id="activeLoansTotalsRow" class="loan-totals-row" style="font-weight:800;background:#f8fafc">
+              <td colspan="2">${tx('المجموع','Total')}</td>
+              <td id="activeTotalInstallment">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.installment||0),0))}</td>
+              <td>—</td>
+              <td id="activeTotalAmount">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.amount||0),0))}</td>
+              <td id="activeTotalPaid">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.paid||0),0))}</td>
+              <td id="activeTotalRemaining">${wholeMoney(activeLoans.reduce((s,l)=>s+Math.max(0,Number(l.total||0)-Number(l.paid||0)),0))}</td>
+              <td>—</td><td>—</td>
+            </tr>
+            ${loanRows(activeLoans)}
+          `:html`<tr class="empty-row"><td colspan="9" class="muted">${tx('لا توجد قروض نشطة.','No active loans.')}</td></tr>`}
         </tbody></table>
       </div>
     </details>
