@@ -477,41 +477,28 @@ function getUserAccountMetrics(username){
       0
     );
 
-  // التحصيل الفعلي:
-  // من يوم 6 من الشهر الحالي إلى يوم 25 من الشهر التالي.
+  // ============================================================
+  // Current collection cycle: 06 previous month -> 05 current month.
+  // Both expected and actual collection MUST use the same window.
+  // ============================================================
+  const collectionStart=new Date(y,m-1,6,0,0,0,0);
+  const collectionEnd=new Date(y,m,5,23,59,59,999);
+
+  const paymentDateObj=p=>{
+    if(p.paymentDate) return new Date(p.paymentDate+'T00:00:00');
+    if(p.createdAt) return new Date(p.createdAt);
+    return null;
+  };
+
   let collectedThisMonth=0;
   let paymentCount=0;
 
   approvedLoans.forEach(l=>{
     (l.payments||[]).forEach(p=>{
       paymentCount++;
-
-      const d=p.paymentDate
-        ? new Date(p.paymentDate+'T00:00:00')
-        : (
-            p.createdAt
-              ? new Date(p.createdAt)
-              : null
-          );
-
-      if(d){
-        const collectionStart=
-          new Date(y,m,6);
-
-        const collectionEnd=
-          new Date(
-            y,
-            m+1,
-            25,
-            23,59,59,999
-          );
-
-        if(
-          d>=collectionStart &&
-          d<=collectionEnd
-        ){
-          collectedThisMonth+=Number(p.amount||0);
-        }
+      const d=paymentDateObj(p);
+      if(d && d>=collectionStart && d<=collectionEnd){
+        collectedThisMonth+=Number(p.amount||0);
       }
     });
   });
@@ -519,50 +506,64 @@ function getUserAccountMetrics(username){
   // ============================================================
   // Expected Monthly Collection
   //
-  // القاعدة المعتمدة:
-  // القروض قبل يوم 26 من الشهر الحالي تدخل في المتوقع.
-  // القروض من يوم 26 إلى نهاية الشهر الحالي لا تدخل في المتوقع
-  // لهذه الدورة، وتدخل في الدورة التالية.
+  // Expected = installments that are actually due inside the SAME
+  // collection cycle (06 previous month -> 05 current month).
+  //
+  // Agreed new-loan rule:
+  // - loan dated 01..25 => first installment due on 05 next month.
+  // - loan dated 26..end => first installment due on 05 of the
+  //   second following month.
+  //
+  // We use the balance immediately BEFORE this cycle starts, so a
+  // payment received during this cycle does not incorrectly reduce
+  // the expected amount. It only reduces "remaining this month".
   // ============================================================
+  const firstDueDateForLoan=l=>{
+    const d=loanDateObj(l);
+    if(!d) return null;
+    const extraMonths=d.getDate()<=25 ? 1 : 2;
+    return new Date(d.getFullYear(),d.getMonth()+extraMonths,5,0,0,0,0);
+  };
 
-  const currentMonthLoanCutoff=
-    new Date(y,m,26);
+  const monthsBetween=(a,b)=>(
+    (b.getFullYear()-a.getFullYear())*12 +
+    (b.getMonth()-a.getMonth())
+  );
 
-  const expectedMonthlyCollection=
-    activeLoans
-      .filter(l=>{
-        const d=loanDateObj(l);
+  const expectedMonthlyCollection=approvedLoans.reduce((sum,l)=>{
+    const firstDue=firstDueDateForLoan(l);
+    const months=Number(l.months||0);
+    const installment=Number(l.installment||0);
 
-        // لا نحتسب قرضًا بدون تاريخ صالح.
-        if(!d) return false;
+    if(!firstDue || months<=0 || installment<=0) return sum;
 
-        // قبل يوم 26 يدخل.
-        // يوم 26 وما بعده لا يدخل في الدورة الحالية.
-        return d<currentMonthLoanCutoff;
-      })
-      .reduce((s,l)=>{
-        const remaining=Math.max(
-          0,
-          Number(l.total||0) -
-          Number(l.paid||0)
-        );
+    // Every scheduled installment is due on day 05. For this cycle,
+    // the relevant due date is 05 of the current calendar month.
+    const dueDate=new Date(y,m,5,0,0,0,0);
+    const installmentIndex=monthsBetween(firstDue,dueDate);
 
-        // لا نحتسب أكثر من الرصيد المتبقي للقرض.
-        const expectedForLoan=Math.min(
-          Number(l.installment||0),
-          remaining
-        );
+    // No installment from this loan is scheduled in this cycle.
+    if(installmentIndex<0 || installmentIndex>=months) return sum;
 
-        return s+expectedForLoan;
-      },0);
+    // Balance immediately before 06 of the previous month.
+    const paidBeforeCycle=(l.payments||[]).reduce((paid,p)=>{
+      const d=paymentDateObj(p);
+      return paid + (d && d<collectionStart ? Number(p.amount||0) : 0);
+    },0);
 
-  // المتبقي للتحصيل =
-  // المتوقع - المحصل فعليًا
-  // ولا يمكن أن يكون أقل من صفر.
+    const balanceAtCycleStart=Math.max(
+      0,
+      Number(l.total||0)-paidBeforeCycle
+    );
+
+    return sum+Math.min(installment,balanceAtCycleStart);
+  },0);
+
+  // Remaining to collect = expected for this exact cycle
+  // minus payments actually received during the same cycle.
   const remainingThisMonth=Math.max(
     0,
-    expectedMonthlyCollection -
-    collectedThisMonth
+    expectedMonthlyCollection-collectedThisMonth
   );
 
   return {
