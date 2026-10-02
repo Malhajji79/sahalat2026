@@ -191,6 +191,20 @@ function bindLoanFilters(){
     if(otherCount) otherCount.textContent=`(${sectionCounts.other})`;
     if(closedCount) closedCount.textContent=`(${sectionCounts.closed})`;
 
+    // Recalculate the active-loans totals from only the rows that remain visible
+    // after the current filters are applied.
+    const visibleActiveRows=[...document.querySelectorAll('#activeLoansBody tr[data-loan-id]')]
+      .filter(row=>row.style.display!=='none');
+    const sumData=key=>visibleActiveRows.reduce((sum,row)=>sum+Number(row.dataset[key]||0),0);
+    const totalInstallment=document.getElementById('activeTotalInstallment');
+    const totalAmount=document.getElementById('activeTotalAmount');
+    const totalPaid=document.getElementById('activeTotalPaid');
+    const totalRemaining=document.getElementById('activeTotalRemaining');
+    if(totalInstallment) totalInstallment.textContent=wholeMoney(sumData('loanInstallment'));
+    if(totalAmount) totalAmount.textContent=wholeMoney(sumData('loanAmount'));
+    if(totalPaid) totalPaid.textContent=wholeMoney(sumData('loanPaid'));
+    if(totalRemaining) totalRemaining.textContent=wholeMoney(sumData('loanRemaining'));
+
     const total=allRows.length;
     summary.textContent=(creatorValue||typeValue)
       ? `النتائج المطابقة: ${shown} من ${total} قرض`
