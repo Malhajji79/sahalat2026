@@ -1,5 +1,5 @@
 function paymentsTableRows(rows){
-  return rows.length ? htmlJoin(rows.map(r=>html`<tr class="loans-summary-row" style="font-weight:800;background:#E8F3EE;color:#185C4A;border-top:2px solid #A7D7C5">
+  return rows.length ? htmlJoin(rows.map(r=>html`<tr>
     <td>${r.loanId}</td><td>${r.beneficiary}</td><td>${wholeMoney(r.amount)}</td><td>${r.by||'—'}</td>
     <td>${paymentDisplayDate(r)}</td><td>${r.note||'—'}</td>
   </tr>`)) : html`<tr><td colspan="6" class="muted">${tx('لا توجد دفعات مطابقة للفلاتر.','No payments match the filters.')}</td></tr>`;
