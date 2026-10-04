@@ -691,6 +691,53 @@ html[lang="en"] .sahalat-date {
 }
 
 /* ===== Active loans totals row only ===== */
+/* Owner analytics: deliberately scoped, with readable mobile tables. */
+.oa-dashboard{display:grid;gap:18px;max-width:1560px;margin:auto;min-width:0}
+.oa-dashboard>*{min-width:0}
+.oa-dashboard .card{box-shadow:0 3px 16px #143c2f05;padding:22px;min-width:0}
+.oa-dashboard h2,.oa-dashboard h3{margin:0 0 12px;line-height:1.6}
+.oa-dashboard p{line-height:1.85}
+.oa-heading{display:flex;justify-content:space-between;align-items:start;gap:16px;border-top:4px solid #0f766e}
+.oa-eyebrow{color:#0f766e;font-size:.85rem;font-weight:800;margin-bottom:6px}
+.oa-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;background:#f8fbfa}
+.oa-filters .field{margin:0;min-width:0}
+.oa-filters select{width:100%}
+.oa-period{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#e8f3ee;color:#185c4a;border-radius:12px;padding:14px 18px;line-height:1.8}
+.oa-warning{padding:16px;border:1px solid #f3cc7a;border-radius:12px;background:#fff8e8;color:#754511;line-height:1.9}
+.oa-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.oa-dashboard .oa-metric{display:flex;flex-direction:column;align-items:flex-start;gap:10px;color:inherit;font:inherit;text-align:start;cursor:pointer;border:1px solid var(--border);background:white}
+.oa-dashboard .oa-metric:hover{border-color:#0f766e;background:#f7fcfa}
+.oa-metric>strong{font-size:clamp(1.4rem,2.2vw,2rem);font-weight:800}
+.oa-change{font-size:.85rem;color:#53676a;line-height:1.7}
+.oa-two-columns{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start}
+.oa-section-title{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.oa-section-title select{max-width:230px}
+.oa-chart{display:grid;gap:18px;margin-top:20px}
+.oa-chart-row{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;align-items:center}
+.oa-chart-row>strong{font-size:.85rem}
+.oa-chart-pair{display:grid;gap:7px}
+.oa-chart-pair>div{display:grid;grid-template-columns:minmax(30px,1fr) minmax(80px,.75fr);gap:12px;align-items:center;font-size:.9rem}
+.oa-bar-track{display:block;height:11px;background:#edf1f5;border-radius:8px;overflow:hidden}
+.oa-bar{display:block;height:100%;border-radius:8px;min-width:0}
+.oa-due{background:#507bc8}.oa-collected{background:#168474}
+.oa-aging{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}
+.oa-aging-item{display:grid;gap:9px;padding:16px;text-align:start;border:1px solid #e6dcca;border-radius:12px;font:inherit;background:#fffaf0;cursor:pointer}
+.oa-aging-item strong{font-size:1.35rem}.oa-aging-2,.oa-aging-3{background:#fff1ee;border-color:#f2ceca}
+.oa-breakdown{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;margin-top:22px}
+.oa-breakdown dt{line-height:1.7}.oa-breakdown dd{margin:0;font-weight:800}
+.oa-link{border:0;background:none;color:#185c4a;text-decoration:underline;font:inherit;cursor:pointer}
+.oa-distribution{display:grid;grid-template-columns:1fr auto;gap:10px;width:100%;text-align:start;border:0;background:none;font:inherit;padding:12px 0;cursor:pointer}
+.oa-distribution .oa-bar-track{grid-column:1/-1}
+.oa-distribution strong{font-size:.9rem}
+.oa-dashboard details>summary{font-weight:800;cursor:pointer;line-height:1.8}
+.oa-live-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:16px}
+.oa-live-grid>div{display:grid;gap:12px;padding:16px;background:#f5f8f7;border-radius:10px}
+.oa-live-grid strong{font-size:1.4rem}
+.oa-dashboard button:focus-visible,.oa-dashboard select:focus-visible,.oa-dashboard summary:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
+.oa-dashboard #analyticsDetails{scroll-margin-top:20px}
+html[lang="en"] .oa-dashboard,html[lang="en"] .oa-dashboard .table-wrap,html[lang="en"] .oa-dashboard table{direction:ltr!important;text-align:left}
+@media(max-width:1000px){.oa-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.oa-two-columns{grid-template-columns:1fr}.oa-heading{flex-direction:column}}
+@media(max-width:600px){.oa-kpis,.oa-live-grid{grid-template-columns:1fr}.oa-filters{grid-template-columns:1fr}.oa-dashboard .card{padding:16px}.oa-chart-row{grid-template-columns:58px minmax(0,1fr)}.oa-distribution{grid-template-columns:1fr}.oa-dashboard{gap:14px}}
 #activeLoansTotalsRow.loan-totals-row,
 #activeLoansTotalsRow.loan-totals-row > td {
   background: #E8F3EE !important;
