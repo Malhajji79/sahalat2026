@@ -153,7 +153,7 @@ function loansView(){
       <div class="table-wrap">
         ${tableHead}<tbody id="activeLoansBody">
           ${activeLoans.length?html`
-            <tr id="activeLoansTotalsRow" class="loan-totals-row" style="font-weight:800;background:#f8fafc">
+            <tr id="activeLoansTotalsRow" class="loan-totals-row" style="font-weight:800;background:#E8F3EE;color:#185C4A;border-top:2px solid #A7D7C5">
               <td colspan="2">${tx('المجموع','Total')}</td>
               <td id="activeTotalInstallment" style="color:#0F766E !important;font-weight:800">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.installment||0),0))}</td>
               <td>—</td>
