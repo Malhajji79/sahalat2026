@@ -16,7 +16,16 @@ function bindLanguageSwitch(){
 
 ;
 function bindAnalytics(){
-  document.querySelectorAll('.analyticsMode').forEach(b=>b.onclick=()=>{state.analyticsMode=b.dataset.mode;render();});
+  for(const key of ['Year','Compare','User','Type','Sort']){
+    document.getElementById('analytics'+key)?.addEventListener('change',e=>{
+      state['analytics'+key]=e.target.value;state.analyticsAging=null;render();
+    });
+  }
+  const details=()=>{render();const el=document.getElementById('analyticsDetails');el?.scrollIntoView({block:'start'});el?.focus({preventScroll:true});};
+  document.querySelectorAll('[data-analytics-detail]').forEach(b=>b.onclick=()=>{state.analyticsDetail=b.dataset.analyticsDetail;state.analyticsAging=null;details();});
+  document.querySelectorAll('[data-analytics-aging]').forEach(b=>b.onclick=()=>{state.analyticsDetail='overdue';state.analyticsAging=Number(b.dataset.analyticsAging);details();});
+  document.querySelectorAll('[data-analytics-user]').forEach(b=>b.onclick=()=>{state.analyticsUser=b.dataset.analyticsUser;state.analyticsAging=null;render();});
+  document.querySelectorAll('[data-analytics-loan]').forEach(b=>b.onclick=()=>{state.selectedLoanId=b.dataset.analyticsLoan;state.page='loan-details';render();});
 }
 
 
