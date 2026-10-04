@@ -689,3 +689,24 @@ html[lang="en"] .sahalat-date {
   font-family: "Lora", Georgia, serif;
   font-variant-numeric: lining-nums tabular-nums;
 }
+
+/* ===== Active loans totals row ===== */
+#activeLoansTotalsRow.loan-totals-row {
+  background: #E8F3EE !important;
+  color: #185C4A !important;
+  font-weight: 800 !important;
+  border-top: 2px solid #A7D7C5 !important;
+}
+#activeLoansTotalsRow.loan-totals-row > td {
+  color: #185C4A !important;
+  font-weight: 800 !important;
+}
+#activeLoansTotalsRow.loan-totals-row .sahalat-number,
+#activeLoansTotalsRow.loan-totals-row .english-number,
+#activeLoansTotalsRow.loan-totals-row #activeTotalInstallment,
+#activeLoansTotalsRow.loan-totals-row #activeTotalAmount,
+#activeLoansTotalsRow.loan-totals-row #activeTotalPaid,
+#activeLoansTotalsRow.loan-totals-row #activeTotalRemaining {
+  color: #0F766E !important;
+  font-weight: 800 !important;
+}
