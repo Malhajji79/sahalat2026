@@ -690,19 +690,16 @@ html[lang="en"] .sahalat-date {
   font-variant-numeric: lining-nums tabular-nums;
 }
 
-/* ===== Active loans totals row ===== */
-#activeLoansTotalsRow.loan-totals-row {
+/* ===== Active loans totals row only ===== */
+#activeLoansTotalsRow.loan-totals-row,
+#activeLoansTotalsRow.loan-totals-row > td {
   background: #E8F3EE !important;
   color: #185C4A !important;
   font-weight: 800 !important;
   border-top: 2px solid #A7D7C5 !important;
 }
-#activeLoansTotalsRow.loan-totals-row > td {
-  color: #185C4A !important;
-  font-weight: 800 !important;
-}
-#activeLoansTotalsRow.loan-totals-row .sahalat-number,
-#activeLoansTotalsRow.loan-totals-row .english-number,
+/* Target the generated number spans directly; never override negatives or dates. */
+#activeLoansTotalsRow.loan-totals-row .sahalat-number:not(.sahalat-negative):not(.sahalat-date),
 #activeLoansTotalsRow.loan-totals-row #activeTotalInstallment,
 #activeLoansTotalsRow.loan-totals-row #activeTotalAmount,
 #activeLoansTotalsRow.loan-totals-row #activeTotalPaid,
