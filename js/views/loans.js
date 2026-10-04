@@ -1,5 +1,5 @@
 function paymentsTableRows(rows){
-  return rows.length ? htmlJoin(rows.map(r=>html`<tr>
+  return rows.length ? htmlJoin(rows.map(r=>html`<tr class="loans-summary-row" style="font-weight:800;background:#E8F3EE;color:#185C4A;border-top:2px solid #A7D7C5">
     <td>${r.loanId}</td><td>${r.beneficiary}</td><td>${wholeMoney(r.amount)}</td><td>${r.by||'—'}</td>
     <td>${paymentDisplayDate(r)}</td><td>${r.note||'—'}</td>
   </tr>`)) : html`<tr><td colspan="6" class="muted">${tx('لا توجد دفعات مطابقة للفلاتر.','No payments match the filters.')}</td></tr>`;
@@ -155,11 +155,11 @@ function loansView(){
           ${activeLoans.length?html`
             <tr id="activeLoansTotalsRow" class="loan-totals-row" style="font-weight:800;background:#f8fafc">
               <td colspan="2">${tx('المجموع','Total')}</td>
-              <td id="activeTotalInstallment">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.installment||0),0))}</td>
+              <td id="activeTotalInstallment" style="color:#0F766E !important;font-weight:800">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.installment||0),0))}</td>
               <td>—</td>
-              <td id="activeTotalAmount">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.amount||0),0))}</td>
-              <td id="activeTotalPaid">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.paid||0),0))}</td>
-              <td id="activeTotalRemaining">${wholeMoney(activeLoans.reduce((s,l)=>s+Math.max(0,Number(l.total||0)-Number(l.paid||0)),0))}</td>
+              <td id="activeTotalAmount" style="color:#0F766E !important;font-weight:800">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.amount||0),0))}</td>
+              <td id="activeTotalPaid" style="color:#0F766E !important;font-weight:800">${wholeMoney(activeLoans.reduce((s,l)=>s+Number(l.paid||0),0))}</td>
+              <td id="activeTotalRemaining" style="color:#0F766E !important;font-weight:800">${wholeMoney(activeLoans.reduce((s,l)=>s+Math.max(0,Number(l.total||0)-Number(l.paid||0)),0))}</td>
               <td>—</td><td>—</td><td>—</td><td>—</td>
             </tr>
             ${loanRows(activeLoans)}
@@ -794,3 +794,4 @@ function newLoanView(){
     </div>
   </div>`;
 }
+
