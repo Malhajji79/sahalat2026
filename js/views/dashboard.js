@@ -1,3 +1,119 @@
+// Read-only analytics. All dates use local calendar days and approved year boundaries.
+function ownerAnalyticsDay(value){
+  const raw=String(value||'').slice(0,10),m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m)return null;
+  const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));
+  return d.getFullYear()===Number(m[1])&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[3])?d:null;
+}
+function ownerAnalyticsDays(a,b){
+  return Math.round((Date.UTC(b.getFullYear(),b.getMonth(),b.getDate())-Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()))/86400000);
+}
+function ownerAnalyticsYears(){
+  return (state.collectionYears||[]).map(y=>({...y,start:ownerAnalyticsDay(y.startDate),end:ownerAnalyticsDay(y.endDate)}))
+    .filter(y=>y.start&&y.end&&y.start<=y.end).sort((a,b)=>a.start-b.start);
+}
+function ownerAnalyticsContext(now=new Date()){
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),years=ownerAnalyticsYears();
+  const current=years.find(y=>y.start<=today&&y.end>=today)||[...years].reverse().find(y=>y.start<=today)||years[0];
+  const year=years.find(y=>String(y.year)===String(state.analyticsYear))||current;
+  if(!year)return {years,today,year:null};
+  const previous=years[years.indexOf(year)-1]||null;
+  const end=new Date(Math.min(year.end.getTime(),today.getTime()));
+  const days=Math.max(0,ownerAnalyticsDays(year.start,end)+1);
+  let previousEnd=previous?new Date(previous.end):null;
+  if(previous&&state.analyticsCompare!=='full'){
+    previousEnd=new Date(previous.start);previousEnd.setDate(previousEnd.getDate()+days-1);
+    previousEnd=new Date(Math.min(previousEnd.getTime(),previous.end.getTime(),today.getTime()));
+  }
+  return {years,today,year,previous,start:year.start,end,previousEnd,days};
+}
+function ownerAnalyticsLoanRows(start,end,filters={}){
+  const issues=[];
+  if(end<start)return {rows:[],issues};
+  const approved=(state.loans||[]).filter(l=>['active','closed'].includes(l.dbStatus))
+    .filter(l=>(!filters.user||String(l.assignedUserId)===String(filters.user))&&(!filters.type||l.type===filters.type));
+  const inRange=d=>d&&d>=start&&d<=end;
+  const rows=[];
+  for(const loan of approved){
+    const origin=ownerAnalyticsDay(loan.loanDate||loan.createdAt);
+    if(!origin){issues.push({loan,reason:'date'});continue;}
+    if(origin>end)continue;
+    const total=Math.max(0,Number(loan.total||0)),months=Number(loan.months||0),installment=Number(loan.installment||0);
+    const validSchedule=Number.isInteger(months)&&months>0&&months<=1200&&installment>0&&total>0;
+    const payments=(loan.payments||[]).map(p=>({date:ownerAnalyticsDay(p.paymentDate||p.createdAt),amount:Number(p.amount||0)}));
+    const dated=payments.filter(p=>p.date&&Number.isFinite(p.amount)&&p.amount>=0).sort((a,b)=>a.date-b.date);
+    const incomplete=payments.some(p=>!p.date||!Number.isFinite(p.amount)||p.amount<0)||Math.abs(dated.reduce((s,p)=>s+p.amount,0)-Number(loan.paid||0))>0.02;
+    if(incomplete)issues.push({loan,reason:'payments'});
+    if(!validSchedule)issues.push({loan,reason:'schedule'});
+    if((state.repaymentRequests||[]).some(r=>r.loanDbId===loan.dbId&&r.status==='approved'))issues.push({loan,reason:'amended'});
+    const paidAt=d=>dated.reduce((s,p)=>s+(p.date<=d?p.amount:0),0);
+    const paid=paidAt(end),schedule=[];
+    if(validSchedule){
+      let offset=0;
+      for(let i=0;i<months&&offset<total;i++){
+        const due=new Date(origin.getFullYear(),origin.getMonth()+(origin.getDate()<=25?1:2)+i,5);
+        const amount=i===months-1?total-offset:Math.min(installment,total-offset);
+        const covered=Math.min(amount,Math.max(0,paid-offset));
+        const onTime=Math.min(amount,Math.max(0,paidAt(due)-offset));
+        schedule.push({due,amount,covered,onTime:due<=end?onTime:0,unpaid:Math.max(0,amount-covered),offset});offset+=amount;
+      }
+    }
+    const periodDues=schedule.filter(s=>inRange(s.due));
+    const collected=dated.filter(p=>inRange(p.date)).reduce((s,p)=>s+p.amount,0);
+    // FIFO allocation is an analytical convention, not a mutation of payment records.
+    let running=0,arrearsCollected=0,currentCollected=0,advanceCollected=0;
+    for(const p of dated){
+      if(inRange(p.date))for(const s of schedule){
+        const allocated=Math.max(0,Math.min(running+p.amount,s.offset+s.amount)-Math.max(running,s.offset));
+        if(s.due<start)arrearsCollected+=allocated;
+        else if(s.due>end)advanceCollected+=allocated;
+        else currentCollected+=allocated;
+      }
+      running+=p.amount;
+    }
+    const before=new Date(start);before.setDate(before.getDate()-1);
+    const owner=realizedRightsForLoan({...loan,paid}).owner-realizedRightsForLoan({...loan,paid:paidAt(before)}).owner;
+    const overdue=schedule.filter(s=>s.due<end&&s.unpaid>0.005);
+    rows.push({loan,origin,schedule,periodDues,dated,incomplete,collected,owner,lent:inRange(origin)?Number(loan.amount||0):0,
+      due:periodDues.reduce((s,d)=>s+d.amount,0),covered:periodDues.reduce((s,d)=>s+d.covered,0),onTime:periodDues.reduce((s,d)=>s+d.onTime,0),
+      outstanding:Math.max(0,total-paid),overdue:overdue.reduce((s,d)=>s+d.unpaid,0),lateDays:overdue.length?Math.max(...overdue.map(s=>ownerAnalyticsDays(s.due,end))):0,
+      arrearsCollected,currentCollected,advanceCollected});
+  }
+  return {rows,issues};
+}
+function ownerAnalyticsSummary(data){
+  const out={...data};
+  for(const key of ['collected','owner','lent','due','covered','onTime','outstanding','overdue','arrearsCollected','currentCollected','advanceCollected'])out[key]=data.rows.reduce((s,r)=>s+r[key],0);
+  out.rate=out.due>0?out.onTime/out.due*100:null;
+  out.overdueCount=data.rows.filter(r=>r.overdue>0.005).length;
+  out.activeCount=data.rows.filter(r=>r.outstanding>0.005).length;
+  return out;
+}
+function ownerAnalyticsModel(now=new Date()){
+  const context=ownerAnalyticsContext(now);
+  if(!context.year)return context;
+  const filters={user:state.analyticsUser||'',type:state.analyticsType||''};
+  const current=ownerAnalyticsSummary(ownerAnalyticsLoanRows(context.start,context.end,filters));
+  const previous=context.previous?ownerAnalyticsSummary(ownerAnalyticsLoanRows(context.previous.start,context.previousEnd,filters)):null;
+  const buckets=[];
+  for(let d=new Date(context.start.getFullYear(),context.start.getMonth(),1);d<=context.end;d=new Date(d.getFullYear(),d.getMonth()+1,1)){
+    const first=new Date(Math.max(d.getTime(),context.start.getTime())),last=new Date(Math.min(new Date(d.getFullYear(),d.getMonth()+1,0).getTime(),context.end.getTime()));
+    buckets.push({date:d,due:current.rows.reduce((sum,r)=>sum+r.schedule.filter(s=>s.due>=first&&s.due<=last).reduce((a,s)=>a+s.amount,0),0),collected:current.rows.reduce((sum,r)=>sum+r.dated.filter(p=>p.date>=first&&p.date<=last).reduce((a,p)=>a+p.amount,0),0)});
+  }
+  const aging=[{min:1,max:30,label:'1–30'},{min:31,max:60,label:'31–60'},{min:61,max:90,label:'61–90'},{min:91,max:Infinity,label:'90+'}].map(b=>{
+    const matches=current.rows.map(r=>({r,amount:r.schedule.filter(s=>{const days=ownerAnalyticsDays(s.due,context.end);return days>=b.min&&days<=b.max;}).reduce((sum,s)=>sum+s.unpaid,0)})).filter(x=>x.amount>0.005);
+    return {...b,value:matches.reduce((s,x)=>s+x.amount,0),count:matches.length};
+  });
+  const ids=[...new Set(current.rows.map(r=>String(r.loan.assignedUserId||'')))];
+  const users=ids.map(id=>{
+    const user=state.users.find(u=>String(u.id)===id),rows=current.rows.filter(r=>String(r.loan.assignedUserId||'')===id);
+    return {id,name:user?.username||rows[0]?.loan.assignedUser||'—',...ownerAnalyticsSummary({rows,issues:[]})};
+  });
+  const sort=state.analyticsSort||'overdue';users.sort((a,b)=>Number(b[sort]??-1)-Number(a[sort]??-1));
+  return {...context,previousYear:context.previous,current,previous,buckets,aging,users,filters};
+}
+
+
 function analyticsView(){
   const model=ownerAnalyticsModel();
   if(!model.year)return html`<div class="card"><h3>${tx('أضف السنوات التحصيلية أولًا','Configure collection years first')}</h3><p>${tx('تحتاج المقارنة إلى تاريخ بداية ونهاية معتمد لكل سنة تحصيلية.','Comparison requires approved start and end dates for each collection year.')}</p></div>`;
@@ -48,7 +164,7 @@ function analyticsView(){
     <div class="oa-two-columns"><section class="card"><h3>${tx('توزيع الرصيد المتبقي','Outstanding distribution')}</h3>${htmlJoin(model.users.filter(u=>u.outstanding>0).map(u=>html`<button class="oa-distribution" data-analytics-user="${u.id}"><span>${u.name}</span><strong>${wholeMoney(u.outstanding)} · ${percentDisplay(c.outstanding?u.outstanding/c.outstanding*100:0,1)}</strong><span class="oa-bar-track"><span class="oa-bar oa-collected" style="width:${u.outstanding/maxPortfolio*100}%"></span></span></button>`))}${!c.outstanding?html`<p class="muted">${tx('لا توجد أرصدة متبقية.','No outstanding balances.')}</p>`:''}</section>
     <section class="card"><h3>${tx('حركة الإقراض والتحصيل','Lending and collection flow')}</h3><dl class="oa-breakdown"><dt>${tx('تحصيل داخل الفترة','Collections in period')}</dt><dd>${wholeMoney(c.collected)}</dd><dt>${tx('إقراض جديد داخل الفترة','New lending in period')}</dt><dd>${wholeMoney(c.lent)}</dd><dt>${tx('صافي التحصيل ناقص الإقراض','Collections less new lending')}</dt><dd>${wholeMoney(c.collected-c.lent)}</dd></dl><p class="small muted">${tx('هذا صافي حركة القروض فقط. لا يمثل رصيد البنك ولا يشمل حركات رأس المال وتحويلات التصفية.','Loan cash flow only. This is not a bank balance and excludes capital movements and settlement transfers.')}</p></section></div>
     <section class="card" id="analyticsDetails" tabindex="-1"><div class="oa-section-title"><h3>${(detailLabels[detailKey]||detailLabels.overdue)+(ageBucket?' · '+ageBucket.label+' '+tx('يوم','days'):'')}</h3><span class="small muted">${tx('اضغط بطاقة لعرض القروض المكوّنة للمبلغ','Select a metric card to inspect its loans')}</span></div><div class="table-wrap"><table><thead><tr><th>${tx('القرض','Loan')}</th><th>${tx('المستفيد','Beneficiary')}</th><th>${tx('المستخدم','User')}</th><th>${tx('المبلغ','Amount')}</th><th>${tx('أقدم تأخر بالأيام','Oldest overdue days')}</th><th>${tx('آخر سداد','Last payment')}</th></tr></thead><tbody>${detailRows.length?htmlJoin(detailRows.map(r=>{const latest=r.dated.filter(d=>d.date<=model.end).at(-1);return html`<tr><td><button class="btn btn-secondary" data-analytics-loan="${r.loan.id}">${r.loan.id}</button></td><td>${r.loan.beneficiary}</td><td>${r.loan.assignedUser||'—'}</td><td>${wholeMoney(r[detailKey])}</td><td>${arNum(r.lateDays)}</td><td>${latest?date(latest.date):'—'}</td></tr>`;})):html`<tr><td colspan="6">${tx('لا توجد حالات مطابقة.','No matching records.')}</td></tr>`}</tbody></table></div></section>
-    <details class="card oa-live"><summary>${tx('الوضع الحالي المسجل — مستقل عن السنة ونوع القرض','Current recorded position — independent of year and loan type')}</summary><p class="small muted">${tx('يتبع المستخدم المحدد ويشمل كامل حسابه. لا يُعرض كرصد تاريخي للسنة المختارة.','Applies to the selected user’s entire account. Not a historical snapshot of the selected year.')}</p><div class="oa-live-grid"><div><span>${tx('السيولة المسجلة المتاحة','Recorded available cash')}</span><strong>${wholeMoney(cash)}</strong></div><div><span>${tx('حق المالك المحقق غير المحول','Realized owner share less transfers')}</span><strong>${wholeMoney(ownerRealized-ownerTransferred)}</strong></div><div><span>${tx('المحول للمالك','Transferred to owner')}</span><strong>${wholeMoney(ownerTransferred)}</strong></div></div></details>
+    <details class="card oa-live"><summary>${tx('الوضع الحالي المسجل — مستقل عن السنة ونوع القرض','Current recorded position — independent of year and loan type')}</summary><p class="small muted">${tx('يتبع المستخدم المحدد ويشمل كامل حسابه. لا يُعرض كرصد تاريخي للسنة المختارة.','Applies to the selected user’s entire account. Not a historical snapshot of the selected year.')}</p><div class="oa-live-grid"><div><span>${tx('السيولة المسجلة المتاحة','Recorded available cash')}</span><strong>${wholeMoney(cash)}</strong></div><div><span>${tx('حق المالك المحقق غير المحول','Realized owner share less transfers')}</span><strong>${wholeMoney(ownerRealized)}</strong></div><div><span>${tx('المحول للمالك','Transferred to owner')}</span><strong>${wholeMoney(ownerTransferred)}</strong></div></div></details>
     <details class="card" id="analyticsQuality"><summary>${tx('طريقة الحساب وجودة البيانات','Method and data quality')}</summary><p>${tx('الاستحقاق الأول يوم 5 من الشهر التالي للقروض المؤرخة من 1 إلى 25، وبعد شهرين للقروض المؤرخة من 26 إلى نهاية الشهر. فرق التصفية مضاف إلى القسط الأخير لأغراض التحليل. توزع الدفعات على أقدم استحقاق أولًا؛ هذا توزيع تحليلي لا يغيّر السجلات.','First due date is day 5 of the next month for loans dated 1–25, or the second following month for loans dated 26 onward. Settlement remainder is included in the last installment for analysis. Payments are allocated oldest due first; records are not changed.')}</p><p>${tx('المقارنة مبنية على تواريخ الدفعات وشروط القروض المحفوظة حاليًا، وليست لقطة أرشيفية. تعديل شروط قرض أو حذف دفعة لاحقًا قد يغير نتائج السنوات السابقة. عند غياب تاريخ الدفع يستخدم تاريخ تسجيله. حق المالك المحقق محسوب بالتناسب مع التحصيل وفق قاعدة النظام.','Comparison uses dated payments and currently stored loan terms, not archived snapshots. Later term changes or payment deletions may alter past results. Registration date is used when payment date is absent. Realized owner share follows the system’s proportional collection rule.')}</p>${issues.length?html`<ul>${htmlJoin([...new Map(issues.map(i=>[`${i.loan.id}:${i.reason}`,i])).values()].map(i=>html`<li>${tx('قرض','Loan')} <button class="oa-link" data-analytics-loan="${i.loan.id}">${i.loan.id}</button>: ${i.reason==='payments'?tx('دفعات غير مؤرخة أو غير متطابقة مع إجمالي المدفوع؛ الأرصدة التاريخية قد تكون غير مكتملة.','Undated payments or mismatch with paid total; historical balances may be incomplete.'):i.reason==='date'?tx('تاريخ القرض مفقود أو غير صالح؛ مستبعد من التحليل.','Missing or invalid loan date; excluded.'):i.reason==='amended'?tx('تم تعديل فترة السداد؛ يستخدم التحليل الشروط الحالية.','Repayment period amended; current terms used.'):tx('جدول استحقاق غير مكتمل؛ راجع المدة والقسط.','Incomplete schedule; review term and installment.')}</li>`))}</ul>`:html`<p>${tx('لم تظهر ملاحظات على اتساق سجلات الدفعات والجداول المشمولة.','No payment or schedule consistency issues detected in included records.')}</p>`}</details>
   </div>`;
 }
