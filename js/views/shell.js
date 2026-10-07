@@ -53,15 +53,18 @@ function shellView(){
   ];
   return html`
   <div class="shell">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sahalatSidebar">
+      <button type="button" class="mobile-nav-close" id="mobileNavClose" aria-label="إغلاق القائمة">✕</button>
       <div class="brand">${t('appName')}</div>
       <div class="nav">
         ${htmlJoin(navItems.map(([id,label])=>html`<button data-page="${id}" class="${state.page===id?'active':''}">${label}</button>`))}
         <button id="logoutBtn">${t('logout')}</button>
       </div>
     </aside>
+    <button type="button" class="mobile-nav-backdrop" id="mobileNavBackdrop" aria-label="إغلاق القائمة"></button>
     <main class="main">
       <div class="topbar">
+        <button type="button" class="mobile-nav-trigger" id="mobileNavTrigger" aria-label="فتح القائمة" aria-expanded="false">☰ <span>القائمة</span></button>
         <h2 id="pageTitle"></h2>
         <div class="actions" style="margin:0">
           ${languageSwitchButton()}
