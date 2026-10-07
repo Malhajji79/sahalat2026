@@ -126,7 +126,24 @@ function bindPaymentsFilters(){
 
 
 ;
+function setupSahalatMobileNav(){
+  const sidebar=document.getElementById('sahalatSidebar');
+  const trigger=document.getElementById('mobileNavTrigger');
+  const close=document.getElementById('mobileNavClose');
+  const backdrop=document.getElementById('mobileNavBackdrop');
+  if(!sidebar||!trigger)return;
+  const setOpen=open=>{
+    document.body.classList.toggle('sahalat-nav-open',open);
+    trigger.setAttribute('aria-expanded',String(open));
+  };
+  trigger.onclick=()=>setOpen(!document.body.classList.contains('sahalat-nav-open'));
+  if(close)close.onclick=()=>setOpen(false);
+  if(backdrop)backdrop.onclick=()=>setOpen(false);
+  sidebar.querySelectorAll('[data-page],#logoutBtn').forEach(b=>b.addEventListener('click',()=>setOpen(false)));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')setOpen(false)},{once:false});
+}
 function bindNav(){
+  setupSahalatMobileNav();
   document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{state.page=b.dataset.page;render();});
   const refreshBtn=document.getElementById('refreshDbBtn');
   if(refreshBtn) refreshBtn.onclick=async()=>{
