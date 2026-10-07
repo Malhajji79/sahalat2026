@@ -846,17 +846,28 @@ button,.btn{min-height:40px}
 @media(max-width:700px){.sahalat-login-v2.login-wrap{background:linear-gradient(160deg,#e9f5fc,#d5eafa)}.sahalat-login-v2 .login-stage{display:flex;flex-direction:column;min-height:100dvh;gap:0}.sahalat-login-v2 .login-visual{padding:20px 18px 6px;gap:5px}.sahalat-login-v2 .login-visual-head{gap:10px}.sahalat-login-v2 .login-logo-mark{font-size:40px}.sahalat-login-v2 .login-title{font-size:38px}.sahalat-login-v2 .login-subtitle{font-size:12px}.sahalat-login-v2 .login-benefits,.sahalat-login-v2 .login-hero-image{display:none}.sahalat-login-v2 .login-card{flex:1;background:transparent;padding:12px 14px 22px;align-items:flex-start}.sahalat-login-v2 .login-panel{min-height:0;max-width:520px;padding:24px 20px;border-radius:22px;margin:auto}.sahalat-login-v2 .login-language-switch{margin-bottom:25px}.sahalat-login-v2 .login-panel h2{font-size:27px}.sahalat-login-v2 .login-welcome-sub{margin-bottom:24px}.sahalat-login-v2 .login-secure-note{margin-top:24px}}
 @media(prefers-reduced-motion:reduce){.sahalat-login-v2 *{scroll-behavior:auto}}
 
-/* Login background illustration behind the sign-in card */
-.sahalat-login-v2.login-wrap{background:#e9f3fb url('../assets/login-finance-illustration.png') center center / cover no-repeat!important}
-.sahalat-login-v2 .login-stage{max-width:none!important;grid-template-columns:minmax(0,1fr) minmax(380px,0.85fr)!important;background:linear-gradient(90deg,rgba(235,246,253,.20),rgba(8,40,80,.24))}
-.sahalat-login-v2 .login-visual{background:transparent!important}
-.sahalat-login-v2 .login-hero-image{display:none!important}
-.sahalat-login-v2 .login-card{background:transparent!important;position:relative;z-index:1}
-.sahalat-login-v2 .login-panel{background:rgba(255,255,255,.96)!important;box-shadow:0 24px 75px rgba(5,30,62,.28)!important;backdrop-filter:blur(10px)}
+/* Sahalat approved login: illustration only on the left, never behind the form */
+.sahalat-login-v2.login-wrap{background:#edf5fb!important}
+.sahalat-login-v2 .login-stage{max-width:1800px!important;grid-template-columns:minmax(0,1.1fr) minmax(390px,.9fr)!important;background:none!important}
+.sahalat-login-v2 .login-visual{display:flex!important;background:radial-gradient(circle at 90% 10%,#d7eafa,transparent 42%),linear-gradient(145deg,#fbfdff,#e8f3fb)!important}
+.sahalat-login-v2 .login-hero-image{display:block!important;max-height:45vh!important}
+.sahalat-login-v2 .login-card{background:linear-gradient(145deg,#17659d,#092d59)!important}
+.sahalat-login-v2 .login-panel{background:#fff!important;backdrop-filter:none!important}
+/* Arabic copy and finance numbers: Google Fonts */
+:root{--sahalat-ar-font:'Tajawal',sans-serif;--sahalat-title-font:'Cairo','Tajawal',sans-serif;--sahalat-number-font:'Inter','Tajawal',sans-serif}
+html[lang="ar"] body,html[lang="ar"] button,html[lang="ar"] input,html[lang="ar"] select,html[lang="ar"] textarea{font-family:var(--sahalat-ar-font)!important}
+html[lang="en"] body,html[lang="en"] button,html[lang="en"] input,html[lang="en"] select,html[lang="en"] textarea{font-family:'Inter',sans-serif!important}
+h1,h2,h3,.brand,.login-title,.login-panel h2,.section-title,.loan-section>summary,.topbar h2{font-family:var(--sahalat-title-font)!important}
+.english-number,.numeric-value,.number-value,.loan-totals-row{font-variant-numeric:tabular-nums}
+html[lang="en"] .english-number,html[lang="en"] .numeric-value{font-family:var(--sahalat-number-font)!important}
+@media(max-width:1000px) and (min-width:701px){.sahalat-login-v2 .login-stage{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}}
 @media(max-width:700px){
- .sahalat-login-v2.login-wrap{background-position:35% center!important}
- .sahalat-login-v2 .login-stage{display:flex!important;justify-content:center;align-items:center;padding:22px 12px;min-height:100dvh;background:rgba(8,35,75,.22)}
- .sahalat-login-v2 .login-visual{display:none!important}
- .sahalat-login-v2 .login-card{width:100%;padding:0!important}
- .sahalat-login-v2 .login-panel{width:100%;min-height:auto!important;padding:28px 22px!important}
+ .sahalat-login-v2.login-wrap{background:linear-gradient(160deg,#f0f7fc,#dcecf8)!important}
+ .sahalat-login-v2 .login-stage{display:flex!important;flex-direction:column!important;align-items:stretch!important;min-height:100dvh;padding:0 0 20px!important;background:none!important}
+ .sahalat-login-v2 .login-visual{display:flex!important;padding:20px 15px 6px!important;gap:8px!important}
+ .sahalat-login-v2 .login-visual-head{display:flex!important}
+ .sahalat-login-v2 .login-benefits{display:none!important}
+ .sahalat-login-v2 .login-hero-image{display:none!important}
+ .sahalat-login-v2 .login-card{width:100%;flex:1;background:transparent!important;padding:12px 14px 18px!important}
+ .sahalat-login-v2 .login-panel{margin:auto;max-width:520px;min-height:auto!important;padding:25px 20px!important}
 }
