@@ -1,3 +1,5 @@
+
+
 :root{
   --navy:#0f2a5f; --blue:#2f6fed; --bg:#f5f7fb; --card:#fff; --text:#172033;
   --muted:#6b7280; --border:#e5e7eb; --green:#0f9d78; --red:#d64545; --amber:#d68a00;
@@ -800,3 +802,11 @@ button,.btn{min-height:40px}
 }
 @media(max-width:370px){.grid.cards{grid-template-columns:1fr!important}}
 @media(prefers-reduced-motion:reduce){.shell .sidebar{transition:none}}
+
+/* Fix: high-contrast page title on white topbar (desktop, tablet, mobile). */
+.shell > .main > .topbar #pageTitle,
+.shell > .main > .topbar h2 {
+  color: #183153 !important;
+  text-shadow: none !important;
+  font-weight: 800;
+}
