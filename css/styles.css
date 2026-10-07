@@ -810,3 +810,38 @@ button,.btn{min-height:40px}
   text-shadow: none !important;
   font-weight: 800;
 }
+
+/* Sahalat approved financial login — isolated from authenticated pages */
+.sahalat-login-v2.login-wrap{display:block;min-height:100dvh;padding:0;overflow-x:hidden;background:linear-gradient(115deg,#eaf5fb 0%,#f8fbfe 46%,#0d3866 100%)}
+.sahalat-login-v2 .login-stage{width:100%;max-width:1800px;min-height:100dvh;margin:auto;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(390px,.9fr);grid-template-rows:1fr;gap:0;align-items:stretch;justify-items:stretch}
+.sahalat-login-v2 .login-visual{display:flex;flex-direction:column;min-width:0;justify-content:center;gap:30px;padding:clamp(25px,4vw,72px) clamp(24px,4vw,70px);overflow:hidden;background:radial-gradient(circle at 90% 15%,#d4eafa 0%,transparent 42%),linear-gradient(145deg,#f8fcff,#eaf5fc)}
+.sahalat-login-v2 .login-visual-head{display:flex;align-items:center;gap:20px;justify-content:center}
+.sahalat-login-v2 .login-logo-mark{font-size:65px;font-weight:900;color:#087d9f;line-height:1}
+.sahalat-login-v2 .login-title{font-size:clamp(44px,5vw,78px);color:#092d59!important;text-shadow:none!important;line-height:1.25;margin:0}
+.sahalat-login-v2 .login-subtitle{color:#183153;font-size:clamp(14px,1.5vw,22px);margin:0}
+.sahalat-login-v2 .login-benefits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;text-align:center;color:#183153}
+.sahalat-login-v2 .login-benefits>div{display:flex;flex-direction:column;align-items:center;gap:5px}
+.sahalat-login-v2 .login-benefits span{display:grid;place-items:center;width:55px;height:55px;border-radius:50%;background:#dceaf8;color:#1840b8;font-size:26px}
+.sahalat-login-v2 .login-benefits strong{font-size:clamp(12px,1.15vw,16px)}
+.sahalat-login-v2 .login-benefits small{color:#5c718b;font-size:12px}
+.sahalat-login-v2 .login-hero-image{display:block;width:100%;max-width:850px;max-height:48vh;object-fit:contain;align-self:center;border-radius:24px;filter:drop-shadow(0 18px 30px #173d6022)}
+.sahalat-login-v2 .login-card{display:flex;align-items:center;justify-content:center;padding:clamp(18px,4vw,70px);background:linear-gradient(145deg,#1b699f,#0b2f60)}
+.sahalat-login-v2 .login-panel{width:100%;max-width:600px;min-height:640px;display:flex;flex-direction:column;justify-content:center;padding:clamp(25px,4vw,65px);border-radius:28px;background:#fff;border:1px solid #e4edf5;box-shadow:0 28px 70px #051e3e40;color:#183153}
+.sahalat-login-v2 .login-language-switch{position:static;align-self:flex-start;margin-bottom:clamp(30px,5vh,65px)}
+.sahalat-login-v2 .login-panel h2{font-size:clamp(27px,2.6vw,40px);color:#092d59;text-align:center;margin:0 0 7px;font-weight:900}
+.sahalat-login-v2 .login-welcome-sub{text-align:center;color:#526b8b;margin:0 0 35px;font-size:16px}
+.sahalat-login-v2 .login-panel .field{margin-bottom:22px;width:100%}
+.sahalat-login-v2 .login-panel .field label{color:#183153;font-weight:800;margin-bottom:10px;display:block}
+.sahalat-login-v2 .login-panel .field select,.sahalat-login-v2 .login-panel .field input{width:100%;min-height:59px;background:#fff;color:#183153;border:1px solid #d4e0ed;border-radius:13px;font-size:16px}
+.sahalat-login-v2 .login-panel .field input:focus,.sahalat-login-v2 .login-panel .field select:focus{border-color:#1840b8;outline:3px solid #1840b820}
+.sahalat-login-v2 .login-submit{margin-top:12px;width:100%}
+.sahalat-login-v2 .login-panel .btn-primary{min-height:60px;width:100%;border:0;border-radius:13px;background:#1840b8;color:#fff;font-size:20px;font-weight:800}
+.sahalat-login-v2 .login-panel .btn-primary:hover{background:#123494}
+.sahalat-login-v2 .login-secure-note{display:flex;align-items:center;gap:14px;margin-top:36px;padding:17px;border-radius:16px;background:#f1f5fa;color:#183153}
+.sahalat-login-v2 .login-secure-note span{font-size:27px}
+.sahalat-login-v2 .login-secure-note strong,.sahalat-login-v2 .login-secure-note small{display:block}
+.sahalat-login-v2 .login-secure-note small{color:#627894;margin-top:3px}
+.sahalat-login-v2 .login-mobile-brand{display:none}
+@media(max-width:1000px){.sahalat-login-v2 .login-stage{grid-template-columns:1fr 1fr}.sahalat-login-v2 .login-visual{padding:25px}.sahalat-login-v2 .login-benefits{grid-template-columns:repeat(2,1fr)}.sahalat-login-v2 .login-card{padding:20px}.sahalat-login-v2 .login-panel{min-height:570px;padding:30px}}
+@media(max-width:700px){.sahalat-login-v2.login-wrap{background:linear-gradient(160deg,#e9f5fc,#d5eafa)}.sahalat-login-v2 .login-stage{display:flex;flex-direction:column;min-height:100dvh;gap:0}.sahalat-login-v2 .login-visual{padding:20px 18px 6px;gap:5px}.sahalat-login-v2 .login-visual-head{gap:10px}.sahalat-login-v2 .login-logo-mark{font-size:40px}.sahalat-login-v2 .login-title{font-size:38px}.sahalat-login-v2 .login-subtitle{font-size:12px}.sahalat-login-v2 .login-benefits,.sahalat-login-v2 .login-hero-image{display:none}.sahalat-login-v2 .login-card{flex:1;background:transparent;padding:12px 14px 22px;align-items:flex-start}.sahalat-login-v2 .login-panel{min-height:0;max-width:520px;padding:24px 20px;border-radius:22px;margin:auto}.sahalat-login-v2 .login-language-switch{margin-bottom:25px}.sahalat-login-v2 .login-panel h2{font-size:27px}.sahalat-login-v2 .login-welcome-sub{margin-bottom:24px}.sahalat-login-v2 .login-secure-note{margin-top:24px}}
+@media(prefers-reduced-motion:reduce){.sahalat-login-v2 *{scroll-behavior:auto}}
