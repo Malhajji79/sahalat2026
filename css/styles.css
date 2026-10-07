@@ -1,5 +1,3 @@
-
-
 :root{
   --navy:#0f2a5f; --blue:#2f6fed; --bg:#f5f7fb; --card:#fff; --text:#172033;
   --muted:#6b7280; --border:#e5e7eb; --green:#0f9d78; --red:#d64545; --amber:#d68a00;
@@ -754,3 +752,51 @@ html[lang="en"] .oa-dashboard,html[lang="en"] .oa-dashboard .table-wrap,html[lan
   color: #0F766E !important;
   font-weight: 800 !important;
 }
+
+/* Sahalat Modern Financial — responsive visual layer */
+:root{--navy:#142d4e;--blue:#1840b8;--bg:#f2f6fa;--card:#fff;--text:#172b44;--muted:#64748b;--border:#dfe7f0;--green:#168477;--red:#d94b55;--amber:#b87917}
+body{background:var(--bg);color:var(--text);font-family:Alexandria,Arial,sans-serif}
+.shell{grid-template-columns:minmax(235px,255px) minmax(0,1fr)}
+.shell .sidebar{background:linear-gradient(165deg,#142d4e,#203f65)!important;box-shadow:0 8px 30px #122b4b18}
+.shell .nav button{color:#e5edf8;border-radius:12px;transition:background .15s ease}
+.shell .nav button.active,.shell .nav button:hover{background:#ffffff25;color:#fff}
+.shell .main{min-width:0;max-width:100%;padding:clamp(14px,2.3vw,32px)}
+.shell .topbar{background:#fff;border:1px solid var(--border);border-radius:18px;padding:12px 18px;box-shadow:0 5px 22px #142d4e09;flex-wrap:wrap}
+.card,.table-wrap,.panel{border-color:var(--border);box-shadow:0 5px 20px #142d4e0a;border-radius:18px}
+.grid.cards{grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr))}
+.card{min-width:0;overflow-wrap:anywhere}
+.card .kpi{font-size:clamp(1.3rem,2.2vw,2rem);line-height:1.4}
+input,select,textarea{max-width:100%;border-radius:10px}
+button,.btn{min-height:40px}
+.table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-wrap table{min-width:max-content}
+.mobile-nav-trigger,.mobile-nav-close,.mobile-nav-backdrop{display:none}
+@media(max-width:1050px){
+ .shell{display:block}
+ .shell .sidebar{position:fixed!important;top:0;bottom:0;inset-inline-start:0;width:min(310px,84vw);z-index:1002;overflow-y:auto;padding:22px 16px;transform:translateX(110%);transition:transform .23s ease;visibility:hidden}
+ html[dir=ltr] .shell .sidebar{transform:translateX(-110%)}
+ body.sahalat-nav-open .shell .sidebar{transform:translateX(0);visibility:visible}
+ .shell .sidebar .nav{display:flex;flex-direction:column;overflow:visible;gap:7px}
+ .shell .sidebar .nav button{white-space:normal;text-align:start;padding:13px}
+ .mobile-nav-trigger{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:11px;background:#f2f6fa;color:#142d4e;padding:8px 13px;flex-shrink:0}
+ .mobile-nav-close{display:block;margin-inline-start:auto;margin-bottom:12px;background:#ffffff24;color:#fff;border:0;border-radius:9px;padding:6px 13px}
+ .mobile-nav-backdrop{position:fixed;inset:0;background:#0a203a91;z-index:1001;border:0}
+ body.sahalat-nav-open .mobile-nav-backdrop{display:block}
+ body.sahalat-nav-open{overflow:hidden}
+ .shell .topbar{gap:10px}
+ .shell .main{padding:clamp(12px,2.3vw,24px)}
+}
+@media(min-width:650px) and (max-width:1050px){.grid.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:649px){
+ .shell .topbar{padding:12px;align-items:center}
+ .shell .topbar .actions{width:100%;justify-content:flex-start;gap:7px;flex-wrap:wrap}
+ .shell .topbar h2{font-size:1.1rem;flex:1;min-width:0}
+ .grid.cards{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px}
+ .grid.cards>.card{padding:12px!important}
+ .grid.cards .card .kpi{font-size:clamp(1.05rem,4.2vw,1.45rem)!important}
+ .form-grid{grid-template-columns:1fr}
+ .card,.panel{padding:clamp(12px,3vw,17px)}
+ .actions{gap:7px}
+}
+@media(max-width:370px){.grid.cards{grid-template-columns:1fr!important}}
+@media(prefers-reduced-motion:reduce){.shell .sidebar{transition:none}}
