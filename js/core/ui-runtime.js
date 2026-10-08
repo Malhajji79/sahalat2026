@@ -466,11 +466,12 @@ function setupTopTableScrollbars(){
 
 // A single responsive offset source prevents overlap between both sticky toolbars.
 function updateLoanDetailsStickyLayout(){
-  const main=document.querySelector('.shell > .main.loan-details-page');
+  const main=document.querySelector('.shell > .main');
   if(!main)return;
   const bar=main.querySelector(':scope > .topbar');
   const sidebar=document.querySelector('.shell > .sidebar');
   if(!bar)return;
+  // The main title is sticky on every page; update the action bar offset for loan details.
   // On narrow screens the navigation remains sticky at the top of the viewport.
   const sideHeight=sidebar && getComputedStyle(sidebar).position==='sticky' ? Math.ceil(sidebar.getBoundingClientRect().height) : 0;
   main.style.setProperty('--loan-sticky-sidebar-height',sideHeight+'px');
@@ -478,7 +479,20 @@ function updateLoanDetailsStickyLayout(){
   main.classList.toggle('is-scrolled',window.scrollY>12);
 }
 window.addEventListener('scroll',()=>{
-  const main=document.querySelector('.shell > .main.loan-details-page');
+  const main=document.querySelector('.shell > .main');
   if(main)main.classList.toggle('is-scrolled',window.scrollY>12);
 },{passive:true});
 window.addEventListener('resize',updateLoanDetailsStickyLayout,{passive:true});
+
+// Observe title height changes caused by language switching and responsive wrapping.
+if (typeof ResizeObserver !== 'undefined') {
+  const installStickyTitleObserver = () => {
+    const titleBar=document.querySelector('.shell > .main > .topbar');
+    if (!titleBar || titleBar.dataset.stickyTitleObserved==='1') return;
+    titleBar.dataset.stickyTitleObserved='1';
+    new ResizeObserver(()=>updateLoanDetailsStickyLayout()).observe(titleBar);
+    updateLoanDetailsStickyLayout();
+  };
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',installStickyTitleObserver);
+  else installStickyTitleObserver();
+}
