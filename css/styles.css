@@ -910,3 +910,21 @@ html[dir="ltr"] .top-scroll-table .top-horizontal-scroll{direction:ltr}
 .loan-detail-values .summary-row > span{text-align:start;min-width:0}
 .loan-detail-values .summary-row > strong{text-align:center;justify-self:stretch;min-width:0;font-variant-numeric:tabular-nums}
 @media(max-width:650px){.shell > .main.loan-details-page > .topbar{top:0}.shell > .main.loan-details-page > #content > .loan-details-actions{padding:8px;gap:8px}.loan-detail-values .summary-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+
+/* Loan details responsive sticky bars and beneficiary labels (2026-10-08). */
+.loan-details-page .card:not(.loan-detail-values) > .summary-row{display:grid;grid-template-columns:minmax(105px,38%) minmax(0,1fr);align-items:center;column-gap:12px}
+.loan-details-page .card:not(.loan-detail-values) > .summary-row > span{min-width:0;overflow-wrap:anywhere;white-space:normal;line-height:1.6}
+.loan-details-page .card:not(.loan-detail-values) > .summary-row > strong{min-width:0;overflow-wrap:anywhere;text-align:center}
+.shell > .main.loan-details-page > .topbar{top:var(--loan-sticky-sidebar-height,0px);transition:background-color .2s,box-shadow .2s;padding:12px;background:#fff;border-radius:16px}
+.shell > .main.loan-details-page > #content > .loan-details-actions{top:calc(var(--loan-sticky-sidebar-height,0px) + var(--loan-details-topbar-height,90px));transition:background-color .2s,box-shadow .2s}
+.shell > .main.loan-details-page.is-scrolled > .topbar{background:#dbeafe;box-shadow:0 5px 18px rgba(7,51,108,.22);border:1px solid #bfdbfe}
+.shell > .main.loan-details-page.is-scrolled > #content > .loan-details-actions{background:#eaf4ff;box-shadow:0 4px 12px rgba(7,51,108,.15)}
+@media(max-width:900px){
+ .shell > .main.loan-details-page > .topbar{top:var(--loan-sticky-sidebar-height,0px);flex-wrap:wrap;align-items:flex-start}
+ .shell > .main.loan-details-page > #content > .loan-details-actions{top:calc(var(--loan-sticky-sidebar-height,0px) + var(--loan-details-topbar-height,90px));margin-bottom:12px}
+}
+@media(max-width:650px){
+ .shell > .main.loan-details-page > .topbar{top:var(--loan-sticky-sidebar-height,0px);padding:10px;gap:8px}
+ .shell > .main.loan-details-page > #content > .loan-details-actions{top:calc(var(--loan-sticky-sidebar-height,0px) + var(--loan-details-topbar-height,90px))}
+ .loan-details-page .card:not(.loan-detail-values) > .summary-row{grid-template-columns:minmax(82px,40%) minmax(0,1fr);gap:9px}
+}
