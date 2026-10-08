@@ -928,3 +928,36 @@ html[dir="ltr"] .top-scroll-table .top-horizontal-scroll{direction:ltr}
  .shell > .main.loan-details-page > #content > .loan-details-actions{top:calc(var(--loan-sticky-sidebar-height,0px) + var(--loan-details-topbar-height,90px))}
  .loan-details-page .card:not(.loan-detail-values) > .summary-row{grid-template-columns:minmax(82px,40%) minmax(0,1fr);gap:9px}
 }
+
+
+/* Shared sticky page heading and desktop fixed-in-view navigation. */
+@media (min-width:1051px) {
+  .shell > .sidebar {
+    position:sticky !important; top:0; align-self:start;
+    height:100vh; max-height:100vh; overflow-y:auto; overscroll-behavior:contain;
+  }
+}
+.shell > .main > .topbar {
+  position:sticky; top:0; z-index:60;
+  background:#fff;
+  transition:background-color .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+.shell > .main.is-scrolled > .topbar {
+  background:#dcecfb;
+  border-color:#9fcbe4;
+  box-shadow:0 7px 20px rgba(10,51,87,.2);
+}
+/* Keep the loan action bar immediately below the real rendered title height. */
+.shell > .main.loan-details-page > .topbar {
+  top:0; z-index:60;
+}
+.shell > .main.loan-details-page > #content > .loan-details-actions {
+  top:var(--loan-details-topbar-height,90px); z-index:59;
+}
+@media (max-width:1050px) {
+ .shell > .main > .topbar {top:0;z-index:60}
+ .shell > .main.loan-details-page > .topbar {top:0}
+ .shell > .main.loan-details-page > #content > .loan-details-actions {
+   top:var(--loan-details-topbar-height,90px);
+ }
+}
