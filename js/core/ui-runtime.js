@@ -304,14 +304,12 @@ function renderPage(){
   const c = document.getElementById('content');
   const title = document.getElementById('pageTitle');
   document.querySelector('.shell > .main')?.classList.toggle('loan-details-page',state.page==='loan-details');
-  if(state.page==='loan-details'){
-    const bar=document.querySelector('.shell > .main > .topbar');
-    const main=document.querySelector('.shell > .main');
-    if(bar&&main) main.style.setProperty('--loan-details-topbar-height',`${Math.ceil(bar.getBoundingClientRect().height)+8}px`);
-  }
+  // Sticky offsets are refreshed after page content renders and whenever viewport size changes.
+
   if(state.page==='dashboard'){title.textContent=t('dashboard'); c.innerHTML=dashboardView();}
   if(state.page==='loans'){title.textContent=t('loans'); c.innerHTML=loansView(); bindLoanActions(); bindLoanFilters();}
   if(state.page==='loan-details'){title.textContent=t('loanDetails'); c.innerHTML=loanDetailsView(); bindLoanDetails();}
+  requestAnimationFrame(updateLoanDetailsStickyLayout);
   if(state.page==='loan-approval'){title.textContent=t('loanApproval'); c.innerHTML=loanApprovalView(); bindLoanApproval();}
   if(state.page==='record-payment'){title.textContent=t('recordPayment'); c.innerHTML=recordPaymentView(); bindRecordPayment();}
   if(state.page==='payment-action'){title.textContent=state.paymentActionMode==='edit'?t('editPayment'):t('deletePayment'); c.innerHTML=paymentActionView(); bindPaymentAction();}
@@ -464,3 +462,23 @@ function setupTopTableScrollbars(){
   });
 }
 
+
+
+// A single responsive offset source prevents overlap between both sticky toolbars.
+function updateLoanDetailsStickyLayout(){
+  const main=document.querySelector('.shell > .main.loan-details-page');
+  if(!main)return;
+  const bar=main.querySelector(':scope > .topbar');
+  const sidebar=document.querySelector('.shell > .sidebar');
+  if(!bar)return;
+  // On narrow screens the navigation remains sticky at the top of the viewport.
+  const sideHeight=sidebar && getComputedStyle(sidebar).position==='sticky' ? Math.ceil(sidebar.getBoundingClientRect().height) : 0;
+  main.style.setProperty('--loan-sticky-sidebar-height',sideHeight+'px');
+  main.style.setProperty('--loan-details-topbar-height',Math.ceil(bar.getBoundingClientRect().height+8)+'px');
+  main.classList.toggle('is-scrolled',window.scrollY>12);
+}
+window.addEventListener('scroll',()=>{
+  const main=document.querySelector('.shell > .main.loan-details-page');
+  if(main)main.classList.toggle('is-scrolled',window.scrollY>12);
+},{passive:true});
+window.addEventListener('resize',updateLoanDetailsStickyLayout,{passive:true});
