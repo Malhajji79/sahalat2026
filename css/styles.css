@@ -961,3 +961,53 @@ html[dir="ltr"] .top-scroll-table .top-horizontal-scroll{direction:ltr}
    top:var(--loan-details-topbar-height,90px);
  }
 }
+
+/* Arabic interface: clearer, slightly larger Arabic-Indic numerals.
+   Apply only to numeric values so surrounding Arabic labels retain Tajawal. */
+html[lang="ar"] .sahalat-number,
+html[lang="ar"] .sahalat-date,
+html[lang="ar"] .english-number,
+html[lang="ar"] input[type="number"],
+html[lang="ar"] input[inputmode="numeric"],
+html[lang="ar"] input[inputmode="decimal"],
+html[lang="ar"] input[inputmode="tel"] {
+  font-family: "Cairo", "Tahoma", Arial, sans-serif;
+  font-size: 1.08em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+
+/* Arabic numeral readability correction v2: actual numeric spans, strong totals
+   and amount fields. Overrides legacy !important font sizes. */
+html[lang="ar"] body #app :is(.sahalat-number,.sahalat-date,.english-number),
+html[lang="ar"] body #app table td :is(.sahalat-number,.sahalat-date,.english-number),
+html[lang="ar"] body #app .summary-row strong :is(.sahalat-number,.sahalat-date,.english-number),
+html[lang="ar"] body #app .kpi :is(.sahalat-number,.sahalat-date,.english-number) {
+  font-family: 'Cairo', 'Tajawal', Arial, sans-serif !important;
+  font-size: 1.17em !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0 !important;
+}
+html[lang="ar"] body #app input[type="number"],
+html[lang="ar"] body #app input[inputmode="numeric"],
+html[lang="ar"] body #app input[inputmode="decimal"] {
+  font-family:'Cairo','Tajawal',Arial,sans-serif !important;
+  font-size:1.13em !important;
+  font-weight:800 !important;
+  font-variant-numeric:tabular-nums;
+}
+/* Numbers rendered directly in totals without nested spans. */
+html[lang="ar"] body #app .summary-row > strong,
+html[lang="ar"] body #app .loan-detail-values .summary-row > strong {
+  font-family:'Cairo','Tajawal',Arial,sans-serif !important;
+  font-size:clamp(1.28rem,1.6vw,1.6rem) !important;
+  font-weight:800 !important;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:700px){
+ html[lang="ar"] body #app .loan-detail-values .summary-row > strong {font-size:1.34rem !important;}
+}
