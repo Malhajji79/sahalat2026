@@ -902,3 +902,11 @@ html[dir="ltr"] .top-scroll-table .top-horizontal-scroll{direction:ltr}
 }
 .table-wrap .pinned-loan-columns thead .table-pin-first,.table-wrap .pinned-loan-columns thead .table-pin-second{z-index:8;background:#f1f5f9}
 .table-wrap .pinned-loan-columns tr.loan-paid-current-window .table-pin-first,.table-wrap .pinned-loan-columns tr.loan-paid-current-window .table-pin-second{background:#dcfce7}
+
+/* Loan details: keep both top controls accessible while scrolling the page. */
+.shell > .main.loan-details-page > .topbar{position:sticky;top:0;z-index:40;margin-bottom:12px}
+.shell > .main.loan-details-page > #content > .loan-details-actions{position:sticky;top:var(--loan-details-topbar-height,90px);z-index:39;background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;margin-top:0;box-shadow:0 4px 12px #102a430d}
+.loan-detail-values .summary-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:12px}
+.loan-detail-values .summary-row > span{text-align:start;min-width:0}
+.loan-detail-values .summary-row > strong{text-align:center;justify-self:stretch;min-width:0;font-variant-numeric:tabular-nums}
+@media(max-width:650px){.shell > .main.loan-details-page > .topbar{top:0}.shell > .main.loan-details-page > #content > .loan-details-actions{padding:8px;gap:8px}.loan-detail-values .summary-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
