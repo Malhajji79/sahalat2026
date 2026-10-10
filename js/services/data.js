@@ -528,17 +528,3 @@ async function loadAnnualSettlementData(){
     importSource:r.import_source||''
   }));
 }
-
-
-async function loadAnnualProfitSettlements(){
-  if(state.currentUser?.role!=='مدير مشروع')throw Error('Unauthorized annual profit report');
-  const all=[];let start=0;
-  while(true){
-    const {data,error}=await supabaseClient.from('annual_settlements')
-      .select('id,settlement_year,account_user_id,settlement_for,amount,settlement_date,created_at')
-      .order('id',{ascending:true}).range(start,start+999);
-    if(error)throw error;
-    all.push(...(data||[]));if(!data||data.length<1000)break;start+=1000;
-  }
-  state.annualProfitSettlements=all;
-}
