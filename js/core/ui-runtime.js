@@ -374,14 +374,6 @@ function renderPage(){
   if(state.page==='early-reviews'){title.textContent=t('repaymentPeriod'); c.innerHTML=earlyReviewsView(); bindEarlyReviews();}
   if(state.page==='repayment-period-admin-review'){title.textContent=t('repaymentPeriod'); c.innerHTML=repaymentPeriodAdminReviewView(); bindRepaymentPeriodAdminReview();}
   if(state.page==='capital-movements'){title.textContent=t('capitalMovements'); c.innerHTML=capitalMovementsView(); bindCapitalMovements();}
-  if(state.page==='annual-profit-report'){
-    if(state.currentUser.role!=='مدير مشروع'){
-      state.page='dashboard';title.textContent=t('dashboard');c.innerHTML=dashboardView();
-    }else{
-      title.textContent=tx('التصفية السنوية للأرباح','Annual Profit Report');
-      c.innerHTML=annualProfitReportView();bindAnnualProfitReport();
-    }
-  }
   if(state.page==='annual-settlement'){
     if(state.currentUser.role!=='مدير مشروع'){
       state.page='dashboard';
