@@ -1434,3 +1434,33 @@ function bindAdmin(){
 }
 
 
+
+
+// Read-only annual profit report. Financial settlement posting remains in its existing workflow.
+function bindAnnualProfitReport(){
+  if(!state._annualProfitLoaded && !state._annualProfitLoading){
+    state._annualProfitLoading=true;
+    loadAnnualProfitSettlements().then(()=>{state._annualProfitLoaded=true;state.annualProfitError=null;render();}).catch(e=>{state.annualProfitError=e?.message||String(e);render();}).finally(()=>state._annualProfitLoading=false);
+  }
+  const select=document.getElementById('annualProfitYear');
+  if(select)select.addEventListener('change',e=>{
+    state.annualProfitYear=Number(e.target.value);
+    render();
+  });
+  document.getElementById('annualProfitRefresh')?.addEventListener('click',async()=>{
+    try{
+      await loadExpectedInterestByCollectionYear();
+      await loadAnnualProfitSettlements();
+      state._annualProfitLoaded=true;state.annualProfitError=null;
+      render();
+    }catch(e){state.annualProfitError=e?.message||String(e);render();}
+  });
+  document.getElementById('annualProfitCsv')?.addEventListener('click',()=>{
+    const r=buildAnnualProfitReport();
+    const head=['User','Realized User','Realized Owner','Expected User','Expected Owner','Previously Settled User','Previously Settled Owner','Remaining Realized User','Remaining Realized Owner'];
+    const rows=r.rows.map(x=>[x.name,x.realizedUser,x.realizedOwner,x.expectedUser,x.expectedOwner,x.settledUser,x.settledOwner,x.remainingUser,x.remainingOwner]);
+    const csv='\uFEFF'+[head,...rows].map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download=`sahalat-annual-profit-${r.year}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  });
+}
