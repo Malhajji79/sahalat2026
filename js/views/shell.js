@@ -50,7 +50,6 @@ function shellView(){
     ...(['أدمن','مدير مشروع'].includes(state.currentUser.role) ? [['collection-years',t('collectionYears')]] : []),
     ...(state.currentUser.role==='مستخدم' ? [] : [['accounts',t('accounts')]]),
     ['capital-movements',t('capitalMovements')],
-    ...(state.currentUser.role==='مدير مشروع' ? [['annual-profit-report',tx('التصفية السنوية للأرباح','Annual Profit Report')]] : []),
     ...(state.currentUser.role==='مدير مشروع' ? [['annual-settlement',t('annualSettlement')]] : []),
     ...(state.currentUser.role==='أدمن' ? [['admin',t('administration')]] : [])
   ];
@@ -79,3 +78,4 @@ function shellView(){
     </main>
   </div>`;
 }
+
