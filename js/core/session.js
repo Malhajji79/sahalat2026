@@ -29,7 +29,21 @@ async function loadCurrentProfile(authUser){
 
 async function bootstrapApp(){
   const app=document.getElementById('app');
-  app.innerHTML=html`<div class="login-wrap"><div class="login-card" style="grid-column:1/-1"><div class="panel login-panel"><h2>سهالات</h2><p class="muted">جاري الاتصال بقاعدة البيانات...</p></div></div></div>`;
+  // Keep the approved blue login theme visible during initialization.
+  app.innerHTML=html`
+    <div class="login-wrap sahalat-login-v2">
+      <main class="login-stage">
+        <section class="login-visual" aria-hidden="true">
+          <div class="login-visual-head"><h1 class="login-title">سهالات</h1></div>
+        </section>
+        <section class="login-card">
+          <div class="panel login-panel" role="status" aria-live="polite">
+            <h2>سهالات</h2>
+            <p class="login-welcome-sub">جاري الاتصال بقاعدة البيانات...</p>
+          </div>
+        </section>
+      </main>
+    </div>`;
 
   try{
     const {data:{session},error}=await supabaseClient.auth.getSession();
