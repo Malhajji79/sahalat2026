@@ -140,7 +140,7 @@ function analyticsView(){
   const maxPortfolio=Math.max(1,...model.users.map(u=>u.outstanding));
   const currentUsers=state.users.filter(u=>u.dbRole!=='admin'&&(!state.analyticsUser||String(u.id)===String(state.analyticsUser)));
   const nowMetrics=currentUsers.map(u=>getUserAccountMetrics(u.username)).filter(Boolean);
-  const cash=nowMetrics.reduce((s,m)=>s+m.bankAfterCollection,0),ownerRealized=nowMetrics.reduce((s,m)=>s+m.realizedOwnerRight,0),ownerTransferred=nowMetrics.reduce((s,m)=>s+m.transferredOwner,0);
+  const cash=nowMetrics.reduce((s,m)=>s+m.bankAfterCollection,0),ownerRealized=nowMetrics.reduce((s,m)=>s+m.remainingRealizedOwnerRight,0),ownerTransferred=nowMetrics.reduce((s,m)=>s+m.transferredOwner,0);
   const issues=[...c.issues,...(p?.issues||[])];
   return html`<div class="analytics-dashboard oa-dashboard">
     <section class="card oa-heading"><div><div class="oa-eyebrow">${tx('نظرة المالك','OWNER OVERVIEW')}</div><h2>${tx('أداء المحفظة والتحصيل','Portfolio & Collection Performance')}</h2><p class="muted">${tx('قارن السنوات، راقب الاستحقاقات، وافتح تفاصيل الأرقام.','Compare years, monitor dues, and inspect the underlying loans.')}</p></div><span class="small muted">${tx('وقت العرض','Viewed at')}: ${date(new Date())}</span></section>

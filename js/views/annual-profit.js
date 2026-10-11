@@ -23,10 +23,21 @@ function buildAnnualProfitReport(){
     const total=Number(loan.total||0);const user=Number(loan.userNet||0),owner=Number(loan.adminNet||0);
     // Each payment realizes a proportional fraction of the interest; never count principal as profit.
     if(total<=0||user+owner<=0)continue;
-    for(const payment of loan.payments||[]){
+    // Apply the same capped, chronological cash-realization rule used by
+    // realizedRightsForLoan() and the Supabase realized-interest functions.
+    const payments=[...(loan.payments||[])].sort((a,b)=>{
+      const da=a.paymentDate||String(a.createdAt||'').slice(0,10);
+      const db=b.paymentDate||String(b.createdAt||'').slice(0,10);
+      return da.localeCompare(db)||String(a.createdAt||'').localeCompare(String(b.createdAt||''))||String(a.id||'').localeCompare(String(b.id||''));
+    });
+    let paidBefore=0;
+    for(const payment of payments){
       const date=payment.paymentDate||String(payment.createdAt||'').slice(0,10);
+      const amount=Math.max(0,Number(payment.amount||0));
+      const paidAfter=paidBefore+amount;
+      const fraction=(Math.min(paidAfter,total)-Math.min(paidBefore,total))/total;
+      paidBefore=paidAfter;
       if(!date||date>range.end)continue;
-      const fraction=Math.max(0,Number(payment.amount||0))/total;
       r.cumulativeRealizedUser+=user*fraction;r.cumulativeRealizedOwner+=owner*fraction;
       if(date>=range.start){r.realizedUser+=user*fraction;r.realizedOwner+=owner*fraction;}
     }
@@ -65,6 +76,7 @@ function annualProfitReportView(){
       <div class="field" style="min-width:190px;margin:0"><label>${tx('السنة التحصيلية','Collection year')}</label><select id="annualProfitYear">${htmlJoin(r.years.map(y=>html`<option value="${y}" ${y===r.year?'selected':''}>${arNum(y)}</option>`))}</select></div>
       <div class="actions"><button class="btn btn-secondary" id="annualProfitRefresh">${tx('تحديث الحسابات','Refresh')}</button><button class="btn btn-secondary" id="annualProfitCsv">${tx('تصدير CSV','Export CSV')}</button></div>
     </div>
+    <p class="small muted">${tx('هذه الصفحة تعرض المحقق خلال السنة المختارة، أما جدول حسابات المستخدمين فيعرض إجمالي المحقق عبر جميع السنوات قبل التصفية. لا تتطابق القيمتان إلا عند مقارنة الفترة نفسها.','This page shows realized profit in the selected year, while user accounts show lifetime gross realized profit before settlements. Values only match for the same period.')}</p>
     <p class="small muted">${tx('الفترة','Period')}: ${dateDisplay(r.range.start)} — ${dateDisplay(r.range.end)} ${!r.range.configured?tx(' (فترة افتراضية لم تُعتمد في جدول السنوات)',' (default dates; not configured in collection years)'):''}</p>
     <div class="grid cards">${metricCard(tx('المحقق للمستخدمين','Realized user shares'),fmt(a.realizedUser))}${metricCard(tx('المحقق للمالك','Realized owner shares'),fmt(a.realizedOwner))}${metricCard(tx('المتوقع للمستخدمين','Expected user shares'),fmt(a.expectedUser))}${metricCard(tx('المتوقع للمالك','Expected owner shares'),fmt(a.expectedOwner))}</div>
     <div class="grid cards" style="margin-top:12px">${metricCard(tx('المصفى في السنة للمستخدمين','Settled in year for users'),fmt(a.settledUser))}${metricCard(tx('المصفى في السنة للمالك','Settled in year for owner'),fmt(a.settledOwner))}${metricCard(tx('متبقي محقق السنة للمستخدمين','Remaining year realized for users'),fmt(a.remainingUser))}${metricCard(tx('متبقي محقق السنة للمالك','Remaining year realized for owner'),fmt(a.remainingOwner))}</div>

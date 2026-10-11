@@ -584,15 +584,12 @@ function getUserAccountMetrics(username){
     targetUserRight,
     targetOwnerRight,
 
-    realizedUserRight:Math.max(
-      0,
-      realizedUserRight-transferredUser
-    ),
-
-    realizedOwnerRight:Math.max(
-      0,
-      realizedOwnerRight-transferredOwner
-    ),
+    // Gross realized profits are never reduced by settlement transfers.
+    // Report net unpaid profit separately to avoid mixing the two figures.
+    realizedUserRight,
+    realizedOwnerRight,
+    remainingRealizedUserRight:Math.max(0,realizedUserRight-transferredUser),
+    remainingRealizedOwnerRight:Math.max(0,realizedOwnerRight-transferredOwner),
 
     transferredUser,
     transferredOwner,
