@@ -202,12 +202,19 @@ async function loadLoansFromDatabase(dependenciesReady=Promise.resolve()){
   const paymentRows=[];
   const paymentPageSize=1000;
   let paymentFrom=0;
+  // Ensure the payment-history list is complete rather than silently hiding rows.
+  const {count:expectedPayments,error:paymentCountError}=await supabaseClient
+    .from('payments').select('id',{count:'exact',head:true});
+  if(paymentCountError) throw paymentCountError;
 
   while(true){
     const {data:paymentPage,error:paymentError}=await supabaseClient
       .from('payments')
       .select('id,loan_id,amount,payment_date,note,created_by,last_edited_by,last_edited_at,created_at')
+      // Unique tie-breaker: identical created_at values must never shift
+      // between pages and cause a payment to disappear from history.
       .order('created_at',{ascending:true})
+      .order('id',{ascending:true})
       .range(paymentFrom,paymentFrom+paymentPageSize-1);
 
     if(paymentError) throw paymentError;
@@ -219,7 +226,11 @@ async function loadLoansFromDatabase(dependenciesReady=Promise.resolve()){
     paymentFrom+=paymentPageSize;
   }
 
-      return paymentRows;
+  const uniqueIds=new Set(paymentRows.map(payment=>payment.id));
+  if(uniqueIds.size!==paymentRows.length || (expectedPayments!==null && expectedPayments!==paymentRows.length)){
+    throw new Error('Payment history incomplete: please reload the page.');
+  }
+  return paymentRows;
     })(),
     (async()=>{const {data,error}=await supabaseClient
     .from('payment_audit_log')
