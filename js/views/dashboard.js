@@ -177,6 +177,49 @@ function analyticsView(){
 }
 
 
+// Current collection year targets come from the same database-backed expected-interest
+// records used on individual dashboards and in the annual profit report.
+function managerCurrentCollectionYearTargetsView(){
+  const users=(state.users||[]).filter(u=>u.dbRole!=='admin'&&u.role!=='أدمن');
+  const today=new Date();
+  const current=(state.collectionYears||[]).find(y=>{
+    const start=ownerAnalyticsDay(y.startDate),end=ownerAnalyticsDay(y.endDate);
+    return start&&end&&start<=today&&today<=end;
+  });
+  if(!current)return html`<div class="card" style="margin-top:20px">
+    <h3>${tx('المستهدف للسنة التحصيلية الحالية','Current Collection Year Targets')}</h3>
+    <p class="muted">${tx('لا توجد سنة تحصيلية حالية معرفة في التقويم؛ يرجى مراجعة إعدادات السنوات.','No collection year covers today; check the configured collection calendar.')}</p>
+  </div>`;
+  const expected=new Map((state.expectedInterestByCollectionYear||[])
+    .filter(r=>Number(r.collectionYear)===Number(current.year))
+    .map(r=>[String(r.userId),r]));
+  const rows=users.map(user=>{
+    const target=expected.get(String(user.id));
+    return {name:user.username,userShare:Number(target?.userShare||0),ownerShare:Number(target?.ownerShare||0)};
+  });
+  const sum=key=>rows.reduce((total,r)=>total+r[key],0);
+  return html`<div class="card" style="margin-top:20px">
+    <h3>${tx('المبلغ المستهدف لكل مستخدم للسنة التحصيلية الحالية','Current Collection Year Target by User')} — ${arNum(current.year)}</h3>
+    <p class="small muted">${dateDisplay(current.startDate)} — ${dateDisplay(current.endDate)} · ${tx('الفوائد المستهدفة فقط، وليست المبالغ المحصلة أو المحققة. تشمل المجاميع المستخدمين غير النشطين ذوي السجلات.','Expected interest shares only, not collected or realized amounts. Totals include inactive users with records.')}</p>
+    <div class="table-wrap"><table style="width:100%;min-width:620px">
+      <thead><tr>
+        <th>${tx('المستخدم','User')}</th>
+        <th>${tx('المستهدف للمستخدم','Target User Share')}</th>
+        <th>${tx('المستهدف للمالك','Target Owner Share')}</th>
+        <th>${tx('إجمالي المستهدف','Total Target')}</th>
+      </tr></thead>
+      <tbody>
+      ${htmlJoin(rows.map(r=>html`<tr>
+        <td>${r.name}</td><td>${wholeMoney(r.userShare)}</td><td>${wholeMoney(r.ownerShare)}</td><td><strong>${wholeMoney(r.userShare+r.ownerShare)}</strong></td>
+      </tr>`))}
+      <tr style="background:#ecfdf5;font-weight:900">
+        <td>${tx('الإجمالي','Total')}</td><td>${wholeMoney(sum('userShare'))}</td><td>${wholeMoney(sum('ownerShare'))}</td><td>${wholeMoney(sum('userShare')+sum('ownerShare'))}</td>
+      </tr></tbody>
+    </table></div>
+  </div>`;
+}
+
+
 function dashboardView(){
   const scopedLoans = visibleLoansForCurrentUser();
 
@@ -246,7 +289,8 @@ function dashboardView(){
         <button class="btn btn-secondary" onclick="state.page='loans';render()">${tx('عرض القروض','View Loans')}</button>
         <button class="btn btn-secondary" onclick="state.accountUser=state.currentUser.username;state.page='edit-account-values';render()">${tx('تعديل رأس المال','Edit Capital')}</button>
       </div>
-    </div>`;
+    </div>
+    ${state.currentUser.role==='مدير مشروع' ? managerCurrentCollectionYearTargetsView() : ''}`;
   }
 
   return html`
@@ -261,6 +305,7 @@ function dashboardView(){
     <div class="card"><div class="muted">${tx('القروض النشطة','Active Loans')}</div><div class="kpi">${active}</div></div>
     <div class="card"><div class="muted">${tx('بانتظار الاعتماد','Awaiting Approval')}</div><div class="kpi">${pending}</div><button class="btn btn-primary" onclick="state.page='loans';render();document.getElementById('otherLoansSection')?.scrollIntoView({block:'start'});">${tx('عرض القروض بانتظار الاعتماد','View Loans Awaiting Approval')}</button></div>
   </div>
+
 
   ${adminUsersFinancialSummaryTable()}
 
