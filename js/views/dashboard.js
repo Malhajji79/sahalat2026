@@ -267,13 +267,13 @@ function dashboardView(){
 
       <div class="grid" style="gap:16px">
         <div class="card" style="padding:28px">
-          <div class="muted">${tx('مجموع حق المالك المحقق','Total Realized Owner Share')}</div>
-          <div class="kpi" style="font-size:36px">${wholeMoney(m.realizedOwnerRight)}</div>
+          <div class="muted">${tx('مجموع حق المالك المحقق بعد خصم جميع التسويات السابقة','Total Realized Owner Share After All Previous Settlements')}</div>
+          <div class="kpi" style="font-size:36px">${wholeMoney(m.remainingRealizedOwnerRight)}</div>
         </div>
 
         <div class="card" style="padding:28px">
-          <div class="muted">${tx('مجموع حق المستخدم المحقق','Total Realized User Share')}</div>
-          <div class="kpi" style="font-size:36px">${wholeMoney(m.realizedUserRight)}</div>
+          <div class="muted">${tx('مجموع حق المستخدم المحقق بعد خصم جميع التسويات السابقة','Total Realized User Share After All Previous Settlements')}</div>
+          <div class="kpi" style="font-size:36px">${wholeMoney(m.remainingRealizedUserRight)}</div>
         </div>
 
         <div class="card" style="padding:28px">
