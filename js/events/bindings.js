@@ -16,6 +16,8 @@ function bindLanguageSwitch(){
 
 ;
 function bindAnalytics(){
+  document.getElementById('analyticsExportExcel')?.addEventListener('click',()=>{try{sahalatExportExcel();}catch(e){console.error(e);alert(tx('تعذر تصدير ملف Excel.','Could not export Excel file.'));}});
+  document.getElementById('analyticsExportPdf')?.addEventListener('click',()=>{try{sahalatExportPdf();}catch(e){console.error(e);alert(tx('تعذر إعداد تقرير PDF.','Could not prepare PDF report.'));}});
   for(const key of ['Year','Compare','User','Type','Sort']){
     document.getElementById('analytics'+key)?.addEventListener('change',e=>{
       state['analytics'+key]=e.target.value;state.analyticsAging=null;render();
