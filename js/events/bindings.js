@@ -1457,8 +1457,8 @@ function bindAnnualProfitReport(){
   });
   document.getElementById('annualProfitCsv')?.addEventListener('click',()=>{
     const r=buildAnnualProfitReport();
-    const head=['User','Realized User','Realized Owner','Expected User','Expected Owner','Previously Settled User','Previously Settled Owner','Remaining Realized User','Remaining Realized Owner'];
-    const rows=r.rows.map(x=>[x.name,x.realizedUser,x.realizedOwner,x.expectedUser,x.expectedOwner,x.settledUser,x.settledOwner,x.remainingUser,x.remainingOwner]);
+    const head=['User','Realized User','Realized Owner','Expected User','Expected Owner','All Prior Years Settled User','All Prior Years Settled Owner','Selected Year Settled User','Selected Year Settled Owner','Remaining Year Realized User','Remaining Year Realized Owner','Cumulative Net User','Cumulative Net Owner'];
+    const rows=r.rows.map(x=>[x.name,x.realizedUser,x.realizedOwner,x.expectedUser,x.expectedOwner,x.priorSettledUser,x.priorSettledOwner,x.settledUser,x.settledOwner,x.remainingUser,x.remainingOwner,x.cumulativeRemainingUser,x.cumulativeRemainingOwner]);
     const csv='\uFEFF'+[head,...rows].map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download=`sahalat-annual-profit-${r.year}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
